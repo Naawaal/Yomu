@@ -1,5 +1,5 @@
 ---
-name: Code
+name: Code Agent
 description: "Implements Flutter features from a validated TODO pipeline. Executes one TODO at a time. Requires Plan & Research to complete first. Requires UI/UX Design to complete before any presentation-layer TODOs."
 argument-hint: "[TODO-XXX to implement, or 'next' to continue]"
 tools:
@@ -25,7 +25,7 @@ handoffs:
     prompt: "Code Agent completed TODO-[N]. Review the output and confirm before continuing."
     send: false
   - label: "→ Next TODO"
-    agent: Code
+    agent: Code Agent
     prompt: "Previous TODO approved. Continue with next pending TODO."
     send: false
 ---

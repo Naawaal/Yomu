@@ -1,5 +1,5 @@
 ---
-name: Design
+name: UI/UX Design Agent
 description: "Defines the complete design system and per-screen UI specs BEFORE any widget code is written. Triggers when: project is new, no ThemeData exists, screens use hardcoded colors, or no style guide exists. Produces design_system.json and component contracts the Code Agent follows exactly."
 argument-hint: "[app name + type, e.g. 'Spendly — personal finance for Gen Z']"
 tools:
@@ -12,11 +12,11 @@ model: ["Auto (copilot)"]
 user-invocable: true
 handoffs:
   - label: "→ Build design system theme files"
-    agent: Code
+    agent: Code Agent
     prompt: "Implement the design system. Execute TODO-DS-001 through TODO-DS-006 in order. Follow design_system.json exactly. No deviations."
     send: false
   - label: "→ Unblock presentation TODOs"
-    agent: Code
+    agent: Code Agent
     prompt: "Design specs confirmed. Proceed with Phase 3B presentation TODOs."
     send: false
 ---

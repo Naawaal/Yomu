@@ -1,5 +1,5 @@
 ---
-name: Plan
+name: PlanResearch Agent
 description: "Decomposes a Flutter task into a structured TODO pipeline AND validates architecture against the existing codebase in a single pass. Always runs before any code is written."
 argument-hint: "[feature description + codebase snapshot from orchestrator]"
 tools:
@@ -10,22 +10,22 @@ tools:
   - web/fetch
   - todo
 agents:
-  - Design
-  - Code
+  - UI/UX Design Agent
+  - Code Agent
 model: ["Auto (copilot)"]
-user-invocable: false
+user-invocable: true
 handoffs:
   - label: "→ Design the UI"
-    agent: Design
+    agent: UI/UX Design Agent
     prompt: "Design specs needed for the plan above. Codebase context included."
     send: false
   - label: "→ Start building (no UI needed)"
-    agent: Code
+    agent: Code Agent
     prompt: "Build from the plan above. Start with TODO-001."
     send: false
 ---
 
-# Plan & Research Agent
+# PlanResearch Agent
 
 You are a **senior Flutter architect**. In a single pass you decompose the task,
 scan the codebase for existing patterns, validate technical decisions, and produce

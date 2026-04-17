@@ -8,9 +8,9 @@ tools:
   - read
   - todo
 agents:
-  - Plan
-  - Design
-  - Code
+  - PlanResearch Agent
+  - UI/UX Design Agent
+  - Code Agent
 model: ["Auto (copilot)"]
 user-invocable: true
 hooks:
@@ -20,8 +20,8 @@ hooks:
       timeout: 10
 handoffs:
   - label: "→ Plan & Research only"
-    agent: Plan
-    prompt: "${input}"
+    agent: PlanResearch Agent
+    prompt: "Plan & Research only. No implementation needed."
     send: false
 ---
 
@@ -66,31 +66,31 @@ Call each agent with the `agent` tool. Pass previous output as context.
 
 **Track A (new feature with UI):**
 
-1. Call `Flutter Plan & Research` → get TODO pipeline
+1. Call `PlanResearch Agent` → get TODO pipeline
 2. If no design system exists OR existing screens use hardcoded colors:
-   Call `Flutter UI/UX Design` → get design system + component specs
-3. Call `Flutter Code` → execute domain + data TODOs first
-4. After design is confirmed → call `Flutter Code` again for presentation TODOs
+   Call `UI/UX Design Agent` → get design system + component specs
+3. Call `Code Agent` → execute domain + data TODOs first
+4. After design is confirmed → call `Code Agent` again for presentation TODOs
 
 **Track A (new feature, no new UI):**
 
-1. Call `Flutter Plan & Research` → get TODO pipeline
-2. Call `Flutter Code` → execute all TODOs
+1. Call `PlanResearch Agent` → get TODO pipeline
+2. Call `Code Agent` → execute all TODOs
 
 **Track B (bug fix):**
 
-1. Call `Flutter Plan & Research` with diagnosis prompt
-2. Call `Flutter Code` with targeted fix only
+1. Call `PlanResearch Agent` with diagnosis prompt
+2. Call `Code Agent` with targeted fix only
 
 **Track C (UI only):**
 
-1. Call `Flutter UI/UX Design` → get specs
-2. Call `Flutter Code` → presentation layer only
+1. Call `UI/UX Design Agent` → get specs
+2. Call `Code Agent` → presentation layer only
 
 **Track D/E:**
 
-1. Call `Flutter Plan & Research` → plan or answer
-2. (For D) Call `Flutter Code` if implementation needed
+1. Call `PlanResearch Agent` → plan or answer
+2. (For D) Call `Code Agent` if implementation needed
 
 ## Step 4 — Gate: never skip design for new UI
 

@@ -3,14 +3,14 @@
     "SessionStart": [
       {
         "type": "command",
-        "command": ".github/hooks/scripts/session-context.sh",
+        "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File .github/hooks/scripts/session-context.ps1",
         "timeout": 10
       }
     ],
     "PostToolUse": [
       {
         "type": "command",
-        "command": ".github/hooks/scripts/flutter-quality.sh",
+        "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File .github/hooks/scripts/flutter-quality.ps1",
         "timeout": 45
       }
     ]
