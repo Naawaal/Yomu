@@ -1,0 +1,25 @@
+{
+  // Required: enables hooks defined in agent frontmatter
+  "chat.useCustomAgentHooks": true,
+
+  // Memory tool (preview) — enables cross-session pattern persistence
+  "github.copilot.chat.tools.memory.enabled": true,
+
+  // Artifacts panel — surfaces design_system.json and plan.md automatically
+  "chat.artifacts.enabled": true,
+  "chat.artifacts.rules.byFilePath": {
+    "**/design_system.json": { "groupName": "Design System" },
+    "**/UI_GUIDELINES.md": { "groupName": "Design System" },
+    "**/*plan*.md": { "groupName": "Plans" }
+  },
+
+  // Auto-approve safe Flutter commands (skip confirmation dialogs)
+  "chat.tools.terminal.autoApprove": {
+    "flutter analyze": true,
+    "flutter pub get": true,
+    "flutter test": true,
+    "dart fix --apply": true,
+    "dart format": true,
+    "/^git (status|diff|log)$/": true
+  }
+}
