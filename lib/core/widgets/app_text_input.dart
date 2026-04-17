@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:moon_design/moon_design.dart';
 
-/// App-standard text input built on [MoonTextInput].
+import '../theme/tokens.dart';
+
+/// App-standard text input built on Material [TextField].
 ///
-/// Wraps Moon's input component and enforces design-system sizing,
-/// borders, and colours from the registered [MoonTheme]. No inline
-/// colour or style values.
+/// Enforces design-system borders, spacing, and typography through
+/// shared theme tokens.
 ///
 /// ```dart
 /// AppTextInput(
@@ -100,10 +100,25 @@ class AppTextInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Widget input = MoonTextInput(
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+
+    final OutlineInputBorder defaultBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderSide: BorderSide(color: colorScheme.outline, width: 1),
+    );
+    final OutlineInputBorder focusedBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderSide: BorderSide(color: colorScheme.primary, width: 2),
+    );
+    final OutlineInputBorder errorBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderSide: BorderSide(color: colorScheme.error, width: 2),
+    );
+
+    final Widget input = TextField(
       controller: controller,
       focusNode: focusNode,
-      hintText: hint,
       keyboardType: keyboardType,
       textInputAction: textInputAction,
       inputFormatters: inputFormatters,
@@ -115,25 +130,29 @@ class AppTextInput extends StatelessWidget {
       autocorrect: autocorrect,
       maxLines: maxLines,
       maxLength: maxLength,
-      leading: leadingIcon,
-      trailing: trailingWidget,
-      helper: helper != null ? Text(helper!) : null,
-      errorText: errorText,
+      style: textTheme.bodyLarge,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        helperText: helper,
+        errorText: errorText,
+        helperStyle: textTheme.bodySmall,
+        errorStyle: textTheme.bodySmall,
+        prefixIcon: leadingIcon,
+        suffixIcon: trailingWidget,
+        border: defaultBorder,
+        enabledBorder: defaultBorder,
+        focusedBorder: focusedBorder,
+        errorBorder: errorBorder,
+        focusedErrorBorder: errorBorder,
+        fillColor: colorScheme.surface,
+        filled: true,
+      ),
     );
 
-    if (label == null) return input;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          label!,
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
-        const SizedBox(height: 4),
-        input,
-      ],
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: AppSpacing.xxl),
+      child: input,
     );
   }
 }

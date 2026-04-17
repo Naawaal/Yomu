@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'app_colors_extension.dart';
 import 'app_theme_extension.dart';
 
 /// Convenience accessors on [BuildContext] for design-system tokens.
@@ -18,6 +19,12 @@ import 'app_theme_extension.dart';
 /// context.appTheme.contentSurface
 /// ```
 extension AppThemeContext on BuildContext {
+  /// The app-level semantic color extension.
+  ///
+  /// Throws if [AppColorsExtension] was not registered in [ThemeData].
+  AppColorsExtension get appColors =>
+      Theme.of(this).extension<AppColorsExtension>()!;
+
   /// The app-level semantic token aliases.
   ///
   /// Throws if [AppThemeExtension] was not registered in [ThemeData].

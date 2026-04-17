@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:animations/animations.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/extensions/presentation/screens/extension_details_screen.dart';
@@ -13,14 +15,14 @@ final GoRouter appRouter = GoRouter(
   routes: <RouteBase>[
     GoRoute(
       path: LaunchRoute.path,
-      builder: (BuildContext context, GoRouterState state) {
-        return const OnboardingGateScreen();
+      pageBuilder: (BuildContext context, GoRouterState state) {
+        return fadeThroughPage(state, const OnboardingGateScreen());
       },
     ),
     GoRoute(
       path: OnboardingRoute.path,
-      builder: (BuildContext context, GoRouterState state) {
-        return const OnboardingScreen();
+      pageBuilder: (BuildContext context, GoRouterState state) {
+        return sharedAxisHorizontalPage(state, const OnboardingScreen());
       },
     ),
     StatefulShellRoute.indexedStack(
@@ -37,8 +39,8 @@ final GoRouter appRouter = GoRouter(
           routes: <RouteBase>[
             GoRoute(
               path: HomeRoute.path,
-              builder: (BuildContext context, GoRouterState state) {
-                return const HomeScreen();
+              pageBuilder: (BuildContext context, GoRouterState state) {
+                return fadeThroughPage(state, const HomeScreen());
               },
             ),
           ],
@@ -47,24 +49,30 @@ final GoRouter appRouter = GoRouter(
           routes: <RouteBase>[
             GoRoute(
               path: SettingsRoute.path,
-              builder: (BuildContext context, GoRouterState state) {
-                return const SettingsScreen();
+              pageBuilder: (BuildContext context, GoRouterState state) {
+                return fadeThroughPage(state, const SettingsScreen());
               },
               routes: <RouteBase>[
                 GoRoute(
                   path: ExtensionsStoreRoute.segment,
-                  builder: (BuildContext context, GoRouterState state) {
-                    return const ExtensionsStoreScreen();
+                  pageBuilder: (BuildContext context, GoRouterState state) {
+                    return sharedAxisHorizontalPage(
+                      state,
+                      const ExtensionsStoreScreen(),
+                    );
                   },
                   routes: <RouteBase>[
                     GoRoute(
                       path: ':${ExtensionDetailsRoute.paramPackageName}',
-                      builder: (BuildContext context, GoRouterState state) {
+                      pageBuilder: (BuildContext context, GoRouterState state) {
                         final String packageName =
                             state.pathParameters[ExtensionDetailsRoute
                                 .paramPackageName] ??
                             '';
-                        return ExtensionDetailsScreen(packageName: packageName);
+                        return sharedAxisHorizontalPage(
+                          state,
+                          ExtensionDetailsScreen(packageName: packageName),
+                        );
                       },
                     ),
                   ],
@@ -77,6 +85,62 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
 );
+
+/// Builds a [CustomTransitionPage] using [FadeThroughTransition] (250 ms).
+///
+/// Visible for testing — prefer using [appRouter] in production code.
+@visibleForTesting
+CustomTransitionPage<void> fadeThroughPage(GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 250),
+    reverseTransitionDuration: const Duration(milliseconds: 240),
+    transitionsBuilder:
+        (
+          BuildContext context,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+          Widget child,
+        ) {
+          return FadeThroughTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            child: child,
+          );
+        },
+  );
+}
+
+/// Builds a [CustomTransitionPage] using a horizontal [SharedAxisTransition] (320 ms).
+///
+/// Visible for testing — prefer using [appRouter] in production code.
+@visibleForTesting
+CustomTransitionPage<void> sharedAxisHorizontalPage(
+  GoRouterState state,
+  Widget child,
+) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 320),
+    reverseTransitionDuration: const Duration(milliseconds: 240),
+    transitionsBuilder:
+        (
+          BuildContext context,
+          Animation<double> animation,
+          Animation<double> secondaryAnimation,
+          Widget child,
+        ) {
+          return SharedAxisTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            transitionType: SharedAxisTransitionType.horizontal,
+            child: child,
+          );
+        },
+  );
+}
 
 /// Typed route helper for app launch (outside the shell).
 abstract final class LaunchRoute {

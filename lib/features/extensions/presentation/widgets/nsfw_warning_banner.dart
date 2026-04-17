@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/theme/app_theme_extension.dart';
 import '../../../../../core/theme/tokens.dart';
+import '../../../../../core/widgets/widgets.dart';
 
 /// Warning banner displayed for NSFW extensions.
 class NsfwWarningBanner extends StatelessWidget {
@@ -11,41 +13,35 @@ class NsfwWarningBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppThemeExtension appTheme =
-        Theme.of(context).extension<AppThemeExtension>()!;
+    final AppThemeExtension appTheme = Theme.of(
+      context,
+    ).extension<AppThemeExtension>()!;
 
-    return Card(
-      color: appTheme.warningContainerColor,
-      child: Padding(
-        padding: InsetsTokens.card,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(
-              Icons.warning_amber_rounded,
-              color: appTheme.warningColor,
-            ),
-            const SizedBox(width: SpacingTokens.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    AppStrings.nsfwContent,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: appTheme.warningColor,
-                    ),
+    return AppCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(Ionicons.warning_outline, color: appTheme.warningColor),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  AppStrings.nsfwContent,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: appTheme.warningColor,
                   ),
-                  const SizedBox(height: SpacingTokens.xs),
-                  Text(
-                    AppStrings.nsfwBody,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  AppStrings.nsfwBody,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

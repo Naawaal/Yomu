@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../../core/constants/app_strings.dart';
+import '../../../../../core/widgets/widgets.dart';
 import '../../domain/entities/extension_item.dart';
 
 /// Primary extension action button set.
@@ -40,21 +41,27 @@ class ExtensionActionButtons extends StatelessWidget {
     final bool shouldShowInstall = item.hasUpdate || showInstallWhenUpToDate;
 
     if (!isTrusted) {
-      final Widget button = FilledButton.tonal(
+      final Widget button = AppButton.outlined(
         onPressed: isLoading ? null : onTrust,
-        child: const Text(AppStrings.trustAndEnable),
+        label: AppStrings.trustAndEnable,
+        isLoading: isLoading,
       );
-      return fullWidth ? SizedBox(width: double.infinity, child: button) : button;
+      return fullWidth
+          ? SizedBox(width: double.infinity, child: button)
+          : button;
     }
 
     if (!shouldShowInstall) {
       return const SizedBox.shrink();
     }
 
-    final String label = item.hasUpdate ? AppStrings.update : AppStrings.install;
-    final Widget button = FilledButton(
+    final String label = item.hasUpdate
+        ? AppStrings.update
+        : AppStrings.install;
+    final Widget button = AppButton(
       onPressed: isLoading ? null : onInstall,
-      child: Text(label),
+      label: label,
+      isLoading: isLoading,
     );
     return fullWidth ? SizedBox(width: double.infinity, child: button) : button;
   }

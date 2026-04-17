@@ -23,12 +23,12 @@ class ExtensionTrustChip extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: SpacingTokens.sm,
-        vertical: SpacingTokens.xxs,
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
       ),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(SpacingTokens.xs),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
         trusted ? AppStrings.trusted : AppStrings.untrusted,

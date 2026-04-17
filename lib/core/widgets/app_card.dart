@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:moon_design/moon_design.dart';
+
+import '../theme/tokens.dart';
 
 /// Elevation levels for [AppCard].
 enum AppCardElevation {
   /// Flat card — no shadow. Relies on border to define bounds.
   flat,
 
-  /// Standard card with a subtle drop shadow.
+  /// Tonal card with the same treatment as [flat].
   raised,
 }
 
-/// App-standard card surface built on Moon Design tokens.
+/// App-standard tonal card surface.
 ///
-/// Uses [MoonColors.gohan] as its background (the "surface" semantic
-/// colour in Moon) and [MoonBorders.surfaceMd] squircle radius. Shadow
-/// is sourced from [MoonShadows] when [elevation] is [AppCardElevation.raised].
+/// Uses Material 3 tonal surfaces and an outline border instead of shadows.
 ///
 /// ```dart
 /// AppCard(
@@ -45,65 +44,24 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final MoonTheme? moon = Theme.of(context).extension<MoonTheme>();
-    final Color surface = moon?.tokens.colors.gohan ?? Colors.white;
-    final BorderRadiusGeometry radius =
-        moon?.tokens.borders.surfaceMd ?? BorderRadius.circular(12);
-    final List<BoxShadow> shadows = elevation == AppCardElevation.raised
-        ? (moon?.tokens.shadows.sm ?? <BoxShadow>[])
-        : <BoxShadow>[];
-
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final EdgeInsetsGeometry effectivePadding =
-        padding ?? const EdgeInsets.all(16);
+        padding ?? const EdgeInsets.all(AppSpacing.md);
+    final BorderRadius borderRadius = BorderRadius.circular(AppRadius.md);
 
-    final Widget content = ClipRRect(
-      borderRadius: radius.resolve(Directionality.of(context)),
-      child: ColoredBox(
-        color: surface,
-        child: Padding(
-          padding: effectivePadding,
-          child: child,
-        ),
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: borderRadius,
+        side: BorderSide(color: colorScheme.outlineVariant),
       ),
-    );
-
-    if (shadows.isEmpty && onTap == null) {
-      return DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: radius.resolve(Directionality.of(context)),
-          color: surface,
-        ),
-        child: ClipRRect(
-          borderRadius: radius.resolve(Directionality.of(context)),
-          child: Padding(padding: effectivePadding, child: child),
-        ),
-      );
-    }
-
-    final decoration = BoxDecoration(
-      color: surface,
-      borderRadius: radius.resolve(Directionality.of(context)),
-      boxShadow: shadows,
-    );
-
-    if (onTap != null) {
-      return DecoratedBox(
-        decoration: decoration,
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: radius.resolve(Directionality.of(context)),
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: radius.resolve(Directionality.of(context)),
-            child: Padding(padding: effectivePadding, child: child),
-          ),
-        ),
-      );
-    }
-
-    return DecoratedBox(
-      decoration: decoration,
-      child: content,
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: borderRadius,
+        child: Padding(padding: effectivePadding, child: child),
+      ),
     );
   }
 }

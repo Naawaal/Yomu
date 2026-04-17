@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/tokens.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../feed/domain/entities/feed_filter.dart';
 import '../../../feed/presentation/controllers/feed_controller.dart';
-import '../../../feed/presentation/widgets/feed_empty_state_widget.dart';
-import '../../../feed/presentation/widgets/feed_error_state_widget.dart';
 import '../../../feed/presentation/widgets/feed_filter_bar_widget.dart';
 import '../../../feed/presentation/widgets/feed_list_widget.dart';
 
@@ -30,8 +30,10 @@ class HomeScreen extends ConsumerWidget {
             return _FeedScaffold(
               filter: FeedFilter.initial,
               contentSliver: SliverToBoxAdapter(
-                child: FeedErrorStateWidget(
+                child: ErrorState(
+                  title: AppStrings.feedLoadFailed,
                   message: error.toString(),
+                  retryLabel: AppStrings.retry,
                   onRetry: () {
                     ref.read(feedControllerProvider.notifier).refresh();
                   },
@@ -53,7 +55,16 @@ class HomeScreen extends ConsumerWidget {
           },
           data: (FeedViewState feedState) {
             final Widget content = feedState.items.isEmpty
-                ? const SliverToBoxAdapter(child: FeedEmptyStateWidget())
+                ? SliverToBoxAdapter(
+                    child: EmptyState(
+                      title: AppStrings.feedEmptyTitle,
+                      description: AppStrings.feedEmptyBody,
+                      actionLabel: AppStrings.feedBrowseExtensions,
+                      onAction: () {
+                        ExtensionsStoreRoute.go(context);
+                      },
+                    ),
+                  )
                 : FeedListWidget(
                     items: feedState.items,
                     hasMore: feedState.hasMore,
@@ -127,6 +138,8 @@ class _FeedLoadingScrollView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: <Widget>[
@@ -134,12 +147,18 @@ class _FeedLoadingScrollView extends StatelessWidget {
         SliverPadding(
           padding: InsetsTokens.page,
           sliver: SliverList.list(
-            children: const <Widget>[
-              _LoadingCard(),
-              SizedBox(height: SpacingTokens.sm),
-              _LoadingCard(),
-              SizedBox(height: SpacingTokens.sm),
-              _LoadingCard(),
+            children: <Widget>[
+              LoadingShimmer(
+                child: Column(
+                  children: <Widget>[
+                    _LoadingCard(color: colorScheme.surfaceContainerHighest),
+                    const SizedBox(height: AppSpacing.sm),
+                    _LoadingCard(color: colorScheme.surfaceContainerHighest),
+                    const SizedBox(height: AppSpacing.sm),
+                    _LoadingCard(color: colorScheme.surfaceContainerHighest),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -149,14 +168,18 @@ class _FeedLoadingScrollView extends StatelessWidget {
 }
 
 class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
+  const _LoadingCard({required this.color});
+
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const SizedBox(height: SpacingTokens.xxxl),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: const SizedBox(height: AppSpacing.xxxl),
     );
   }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../core/constants/app_strings.dart';
+import '../../../../core/widgets/widgets.dart';
 
 /// Persistent application shell with bottom navigation.
 class MainShellScreen extends StatelessWidget {
@@ -13,29 +15,25 @@ class MainShellScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: AppNavBar(
         selectedIndex: navigationShell.currentIndex,
-        backgroundColor: colorScheme.surface,
-        indicatorColor: colorScheme.secondaryContainer,
         onDestinationSelected: (int index) {
           navigationShell.goBranch(
             index,
             initialLocation: index == navigationShell.currentIndex,
           );
         },
-        destinations: const <NavigationDestination>[
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
+        destinations: const <AppNavDestination>[
+          AppNavDestination(
+            icon: Icon(Ionicons.home_outline),
+            selectedIcon: Icon(Ionicons.home),
             label: AppStrings.home,
           ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
+          AppNavDestination(
+            icon: Icon(Ionicons.settings_outline),
+            selectedIcon: Icon(Ionicons.settings),
             label: AppStrings.settings,
           ),
         ],

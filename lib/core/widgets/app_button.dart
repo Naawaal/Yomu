@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
 
+import '../theme/tokens.dart';
+
 /// Visual variants for [AppButton].
 enum AppButtonVariant {
   /// Primary filled button — use for the main call-to-action.
@@ -9,8 +11,8 @@ enum AppButtonVariant {
   /// Secondary outlined button — use for secondary actions.
   outlined,
 
-  /// Ghost text-only button — use for tertiary / low-emphasis actions.
-  ghost,
+  /// Destructive filled button — use for irreversible actions.
+  destructive,
 }
 
 /// Size variants for [AppButton].
@@ -25,11 +27,10 @@ enum AppButtonSize {
   lg,
 }
 
-/// App-standard button built on the Moon Design System.
+/// App-standard button built on the design system.
 ///
-/// Wraps [MoonFilledButton], [MoonOutlinedButton], or [MoonTextButton]
-/// depending on [variant]. All sizing, colour, and shape come from the
-/// registered [MoonTheme] — no hardcoded values.
+/// Wraps [MoonFilledButton], [MoonOutlinedButton], or a destructive
+/// [FilledButton] variant depending on [variant].
 ///
 /// ```dart
 /// AppButton(
@@ -40,6 +41,11 @@ enum AppButtonSize {
 /// AppButton.outlined(
 ///   label: 'Cancel',
 ///   onPressed: Navigator.of(context).pop,
+/// )
+///
+/// AppButton.destructive(
+///   label: 'Delete',
+///   onPressed: onDelete,
 /// )
 /// ```
 class AppButton extends StatelessWidget {
@@ -68,8 +74,8 @@ class AppButton extends StatelessWidget {
     this.isLoading = false,
   }) : variant = AppButtonVariant.outlined;
 
-  /// Creates a ghost (text-only) [AppButton].
-  const AppButton.ghost({
+  /// Creates a destructive [AppButton].
+  const AppButton.destructive({
     super.key,
     required this.label,
     required this.onPressed,
@@ -78,7 +84,7 @@ class AppButton extends StatelessWidget {
     this.trailingIcon,
     this.isFullWidth = false,
     this.isLoading = false,
-  }) : variant = AppButtonVariant.ghost;
+  }) : variant = AppButtonVariant.destructive;
 
   /// The text label displayed inside the button.
   final String label;
@@ -104,56 +110,60 @@ class AppButton extends StatelessWidget {
   /// When `true` the button shows a [MoonCircularLoader] instead of the label.
   final bool isLoading;
 
+  static const double _destructiveMinWidth = 64;
+
   MoonButtonSize get _moonButtonSize => switch (size) {
-        AppButtonSize.sm => MoonButtonSize.xs,
-        AppButtonSize.md => MoonButtonSize.sm,
-        AppButtonSize.lg => MoonButtonSize.md,
-      };
+    AppButtonSize.sm => MoonButtonSize.xs,
+    AppButtonSize.md => MoonButtonSize.sm,
+    AppButtonSize.lg => MoonButtonSize.md,
+  };
+
+  Widget get _loadingIndicator =>
+      const MoonCircularLoader(circularLoaderSize: MoonCircularLoaderSize.xs);
+
+  Widget _resolvedLabel(BuildContext context) {
+    if (isLoading) {
+      return _loadingIndicator;
+    }
+    return Text(label, style: Theme.of(context).textTheme.labelLarge);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final Widget label = Text(this.label);
+    final VoidCallback? effectiveOnPressed = isLoading ? null : onPressed;
+    final Widget resolvedLabel = _resolvedLabel(context);
 
     return switch (variant) {
       AppButtonVariant.filled => MoonFilledButton(
-          onTap: onPressed,
-          buttonSize: _moonButtonSize,
-          isFullWidth: isFullWidth,
-          showPulseEffect: false,
-          leading: leadingIcon,
-          trailing: trailingIcon,
-          label: isLoading
-              ? const MoonCircularLoader(
-                circularLoaderSize: MoonCircularLoaderSize.xs,
-                )
-              : label,
-        ),
+        onTap: effectiveOnPressed,
+        buttonSize: _moonButtonSize,
+        isFullWidth: isFullWidth,
+        showPulseEffect: false,
+        leading: leadingIcon,
+        trailing: trailingIcon,
+        label: resolvedLabel,
+      ),
       AppButtonVariant.outlined => MoonOutlinedButton(
-          onTap: onPressed,
-          buttonSize: _moonButtonSize,
-          isFullWidth: isFullWidth,
-          showPulseEffect: false,
-          leading: leadingIcon,
-          trailing: trailingIcon,
-          label: isLoading
-              ? const MoonCircularLoader(
-                circularLoaderSize: MoonCircularLoaderSize.xs,
-                )
-              : label,
+        onTap: effectiveOnPressed,
+        buttonSize: _moonButtonSize,
+        isFullWidth: isFullWidth,
+        showPulseEffect: false,
+        leading: leadingIcon,
+        trailing: trailingIcon,
+        label: resolvedLabel,
+      ),
+      AppButtonVariant.destructive => FilledButton(
+        onPressed: effectiveOnPressed,
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(_destructiveMinWidth, AppSpacing.xxl),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          foregroundColor: Theme.of(context).colorScheme.onError,
         ),
-      AppButtonVariant.ghost => MoonTextButton(
-          onTap: onPressed,
-          buttonSize: _moonButtonSize,
-          isFullWidth: isFullWidth,
-          showPulseEffect: false,
-          leading: leadingIcon,
-          trailing: trailingIcon,
-          label: isLoading
-              ? const MoonCircularLoader(
-                circularLoaderSize: MoonCircularLoaderSize.xs,
-                )
-              : label,
-        ),
+        child: resolvedLabel,
+      ),
     };
   }
 }

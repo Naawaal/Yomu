@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/router/app_router.dart';
 import '../../../../../core/theme/tokens.dart';
+import '../../../../../core/widgets/widgets.dart';
 import '../../domain/entities/extension_item.dart';
 import '../controllers/extensions_controllers.dart';
-import '../widgets/empty_state_card.dart';
 import '../widgets/extension_tile.dart';
 
 /// Screen that lists available extensions.
@@ -38,7 +39,7 @@ class ExtensionsStoreScreen extends ConsumerWidget {
                           .read(extensionsListControllerProvider.notifier)
                           .refresh();
                     },
-                    icon: const Icon(Icons.refresh_rounded),
+                    icon: const Icon(Ionicons.refresh_outline),
                   ),
                 ],
               ),
@@ -50,8 +51,10 @@ class ExtensionsStoreScreen extends ConsumerWidget {
                   ),
                   error: (Object error, StackTrace stackTrace) =>
                       SliverToBoxAdapter(
-                        child: _ErrorCard(
+                        child: ErrorState(
+                          title: AppStrings.unableToLoadApp,
                           message: error.toString(),
+                          retryLabel: AppStrings.retry,
                           onRetry: () {
                             ref
                                 .read(extensionsListControllerProvider.notifier)
@@ -61,14 +64,26 @@ class ExtensionsStoreScreen extends ConsumerWidget {
                       ),
                   data: (List<ExtensionItem> items) {
                     if (items.isEmpty) {
-                      return const SliverToBoxAdapter(child: EmptyStateCard());
+                      return SliverToBoxAdapter(
+                        child: EmptyState(
+                          title: AppStrings.noExtensionsTitle,
+                          description: AppStrings.noExtensionsBody,
+                          actionLabel: AppStrings.retry,
+                          onAction: () {
+                            ref
+                                .read(extensionsListControllerProvider.notifier)
+                                .refresh();
+                          },
+                          icon: Ionicons.search_outline,
+                        ),
+                      );
                     }
 
                     return SliverGrid(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: crossAxisCount,
-                        crossAxisSpacing: SpacingTokens.md,
-                        mainAxisSpacing: SpacingTokens.md,
+                        crossAxisSpacing: AppSpacing.md,
+                        mainAxisSpacing: AppSpacing.md,
                         childAspectRatio: isExpanded ? 2.2 : 1.9,
                       ),
                       delegate: SliverChildBuilderDelegate((
@@ -91,13 +106,14 @@ class ExtensionsStoreScreen extends ConsumerWidget {
                                   child: Transform.translate(
                                     offset: Offset(
                                       0,
-                                      (1 - value) * SpacingTokens.md,
+                                      (1 - value) * AppSpacing.md,
                                     ),
                                     child: child,
                                   ),
                                 );
                               },
                           child: ExtensionTile(
+                            key: ValueKey<String>(item.packageName),
                             item: item,
                             onPressed: () {
                               ExtensionDetailsRoute.push(
@@ -127,51 +143,29 @@ class _LoadingGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      itemCount: 6,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: SpacingTokens.md,
-        mainAxisSpacing: SpacingTokens.md,
-        childAspectRatio: 2.0,
-      ),
-      itemBuilder: (BuildContext context, int index) {
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(SpacingTokens.xs),
-          ),
-        );
-      },
-    );
-  }
-}
+    final Color skeletonColor = Theme.of(
+      context,
+    ).colorScheme.surfaceContainerHighest;
 
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: InsetsTokens.card,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(message, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: SpacingTokens.md),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text(AppStrings.retry),
-            ),
-          ],
+    return LoadingShimmer(
+      child: GridView.builder(
+        shrinkWrap: true,
+        itemCount: 6,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: AppSpacing.md,
+          mainAxisSpacing: AppSpacing.md,
+          childAspectRatio: 2.0,
         ),
+        itemBuilder: (BuildContext context, int index) {
+          return DecoratedBox(
+            decoration: BoxDecoration(
+              color: skeletonColor,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+          );
+        },
       ),
     );
   }

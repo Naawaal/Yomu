@@ -1,0 +1,279 @@
+{
+  "meta": {
+    "appName": "Yomu",
+    "version": "1.0.0",
+    "seedColor": "#005E7A",
+    "tone": "Minimal clarity"
+  },
+  "colors": {
+    "semanticExtension": {
+      "success": "#2E7D32",
+      "onSuccess": "#FFFFFF",
+      "successContainer": "#C8E6C9",
+      "onSuccessContainer": "#0F2E12",
+      "warning": "#B26A00",
+      "onWarning": "#FFFFFF",
+      "warningContainer": "#FFE0B2",
+      "onWarningContainer": "#3D2400",
+      "info": "#1565C0",
+      "onInfo": "#FFFFFF",
+      "infoContainer": "#D6E9FF",
+      "onInfoContainer": "#032244"
+    }
+  },
+  "typography": {
+    "displayFont": {
+      "family": "Sora",
+      "defaultWeight": 600
+    },
+    "bodyFont": {
+      "family": "Plus Jakarta Sans",
+      "defaultWeight": 400
+    },
+    "materialScale": {
+      "displayLarge": {
+        "fontFamilyRole": "display",
+        "fontSize": 57,
+        "fontWeight": 600,
+        "lineHeight": 1.12,
+        "letterSpacing": 0
+      },
+      "headlineLarge": {
+        "fontFamilyRole": "display",
+        "fontSize": 32,
+        "fontWeight": 600,
+        "lineHeight": 1.25,
+        "letterSpacing": 0
+      },
+      "headlineMedium": {
+        "fontFamilyRole": "display",
+        "fontSize": 28,
+        "fontWeight": 600,
+        "lineHeight": 1.29,
+        "letterSpacing": 0
+      },
+      "headlineSmall": {
+        "fontFamilyRole": "display",
+        "fontSize": 24,
+        "fontWeight": 600,
+        "lineHeight": 1.33,
+        "letterSpacing": 0
+      },
+      "titleLarge": {
+        "fontFamilyRole": "body",
+        "fontSize": 22,
+        "fontWeight": 500,
+        "lineHeight": 1.27,
+        "letterSpacing": 0
+      },
+      "titleMedium": {
+        "fontFamilyRole": "body",
+        "fontSize": 16,
+        "fontWeight": 500,
+        "lineHeight": 1.5,
+        "letterSpacing": 0.15
+      },
+      "titleSmall": {
+        "fontFamilyRole": "body",
+        "fontSize": 14,
+        "fontWeight": 500,
+        "lineHeight": 1.43,
+        "letterSpacing": 0.1
+      },
+      "bodyLarge": {
+        "fontFamilyRole": "body",
+        "fontSize": 16,
+        "fontWeight": 400,
+        "lineHeight": 1.5,
+        "letterSpacing": 0.5
+      },
+      "bodyMedium": {
+        "fontFamilyRole": "body",
+        "fontSize": 14,
+        "fontWeight": 400,
+        "lineHeight": 1.43,
+        "letterSpacing": 0.25
+      },
+      "bodySmall": {
+        "fontFamilyRole": "body",
+        "fontSize": 12,
+        "fontWeight": 400,
+        "lineHeight": 1.33,
+        "letterSpacing": 0.4
+      },
+      "labelLarge": {
+        "fontFamilyRole": "body",
+        "fontSize": 14,
+        "fontWeight": 500,
+        "lineHeight": 1.43,
+        "letterSpacing": 0.1
+      },
+      "labelMedium": {
+        "fontFamilyRole": "body",
+        "fontSize": 12,
+        "fontWeight": 500,
+        "lineHeight": 1.33,
+        "letterSpacing": 0.5
+      },
+      "labelSmall": {
+        "fontFamilyRole": "body",
+        "fontSize": 11,
+        "fontWeight": 500,
+        "lineHeight": 1.45,
+        "letterSpacing": 0.5
+      }
+    }
+  },
+  "spacing": {
+    "xxs": 4,
+    "xs": 8,
+    "sm": 12,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "xxl": 48,
+    "xxxl": 64
+  },
+  "radius": {
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "full": 999
+  },
+  "elevation": {
+    "strategy": "Material 3 tonal elevation with surface tint",
+    "surfaceTintRole": "colorScheme.primary"
+  },
+  "icons": {
+    "library": "ionicons",
+    "style": "outlined",
+    "sizes": {
+      "sm": 20,
+      "md": 24,
+      "lg": 32
+    },
+    "semanticAliases": {
+      "nav.home": "Ionicons.home_outline",
+      "nav.settings": "Ionicons.settings_outline",
+      "action.retry": "Ionicons.refresh_outline",
+      "status.error": "Ionicons.close_circle_outline",
+      "status.empty": "Ionicons.file_tray_outline"
+    }
+  },
+  "motion": {
+    "durationsMs": {
+      "fast": 150,
+      "normal": 250,
+      "slow": 400,
+      "screenEnter": 320,
+      "screenExit": 240,
+      "staggerStep": 60,
+      "shimmerCycle": 1400
+    },
+    "curves": {
+      "standard": "easeOutCubic",
+      "emphasized": "easeInOutCubicEmphasized",
+      "decelerate": "easeOutQuart",
+      "accelerate": "easeInCubic"
+    }
+  },
+  "components": {
+    "PrimaryButton": {
+      "widget": "AppButton variant filled",
+      "height": 48,
+      "radiusToken": "sm",
+      "states": ["default", "pressed", "disabled", "loading"]
+    },
+    "SecondaryButton": {
+      "widget": "AppButton variant outlined",
+      "height": 48,
+      "radiusToken": "sm",
+      "states": ["default", "pressed", "disabled", "loading"]
+    },
+    "DestructiveButton": {
+      "widget": "AppButton variant destructive",
+      "height": 48,
+      "radiusToken": "sm",
+      "states": ["default", "pressed", "disabled", "loading"]
+    },
+    "AppTextField": {
+      "widget": "AppTextInput",
+      "heightMin": 48,
+      "radiusToken": "sm"
+    },
+    "ContentCard": {
+      "widget": "AppCard",
+      "elevation": 0,
+      "radiusToken": "md"
+    },
+    "AppNavBar": {
+      "widget": "AppNavBar",
+      "height": 80,
+      "labelBehavior": "alwaysShow"
+    },
+    "LoadingShimmer": {
+      "widget": "LoadingShimmer",
+      "cycleDurationMs": 1400
+    },
+    "EmptyState": {
+      "widget": "EmptyState",
+      "iconSize": 64
+    },
+    "ErrorState": {
+      "widget": "ErrorState",
+      "iconSize": 64
+    }
+  },
+  "states": {
+    "loading": "Use shimmer for content screens",
+    "empty": "Icon + explanation + action",
+    "error": "Readable message + retry",
+    "success": "Non-blocking confirmation"
+  },
+  "constraints": [
+    "No Color(...) or Colors.* except transparent",
+    "No TextStyle(...) outside app_text_styles.dart",
+    "No BottomNavigationBar",
+    "No spinner-only full-screen loading"
+  ],
+  "todoDsSequence": {
+    "TODO-DS-001": {
+      "title": "AppColors + AppColorsExtension",
+      "expectedOutputFiles": [
+        "lib/core/theme/app_colors.dart",
+        "lib/core/theme/app_colors_extension.dart"
+      ]
+    },
+    "TODO-DS-002": {
+      "title": "AppTextStyles (GoogleFonts TextTheme)",
+      "expectedOutputFiles": ["lib/core/theme/app_text_styles.dart"]
+    },
+    "TODO-DS-003": {
+      "title": "AppSpacing, AppRadius constants",
+      "expectedOutputFiles": ["lib/core/theme/tokens.dart"]
+    },
+    "TODO-DS-004": {
+      "title": "AppTheme.light + AppTheme.dark",
+      "expectedOutputFiles": ["lib/core/theme/app_theme.dart"]
+    },
+    "TODO-DS-005": {
+      "title": "PrimaryButton, SecondaryButton, DestructiveButton, AppTextField",
+      "expectedOutputFiles": [
+        "lib/core/widgets/app_button.dart",
+        "lib/core/widgets/app_text_input.dart"
+      ]
+    },
+    "TODO-DS-006": {
+      "title": "ContentCard, AppNavBar, LoadingShimmer, EmptyState, ErrorState",
+      "expectedOutputFiles": [
+        "lib/core/widgets/app_card.dart",
+        "lib/core/widgets/app_nav_bar.dart",
+        "lib/core/widgets/loading_shimmer.dart",
+        "lib/core/widgets/empty_state.dart",
+        "lib/core/widgets/error_state.dart"
+      ]
+    }
+  }
+}

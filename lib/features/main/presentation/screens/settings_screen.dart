@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/tokens.dart';
+import '../../../../core/widgets/widgets.dart';
 import '../../../settings/domain/entities/repository_config.dart';
 import '../../../settings/domain/entities/settings_snapshot.dart';
 import '../../../settings/presentation/controllers/settings_controller.dart';
@@ -52,17 +54,37 @@ class SettingsScreen extends ConsumerWidget {
             padding: InsetsTokens.page,
             sliver: asyncSettings.when(
               loading: () => SliverList.list(
-                children: const <Widget>[
-                  _SettingsLoadingCard(),
-                  SizedBox(height: SpacingTokens.sm),
-                  _SettingsLoadingCard(),
-                  SizedBox(height: SpacingTokens.sm),
-                  _SettingsLoadingCard(),
+                children: <Widget>[
+                  LoadingShimmer(
+                    child: Column(
+                      children: <Widget>[
+                        _SettingsLoadingCard(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _SettingsLoadingCard(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _SettingsLoadingCard(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               error: (Object error, StackTrace _) => SliverToBoxAdapter(
-                child: _SettingsErrorCard(
+                child: ErrorState(
+                  title: AppStrings.unableToLoadApp,
                   message: error.toString(),
+                  retryLabel: AppStrings.retry,
                   onRetry: () {
                     ref.read(settingsControllerProvider.notifier).refresh();
                   },
@@ -79,7 +101,7 @@ class SettingsScreen extends ConsumerWidget {
                             .setThemePreference(preference);
                       },
                     ),
-                    const SizedBox(height: SpacingTokens.sm),
+                    const SizedBox(height: AppSpacing.sm),
                     BackupSettingsSectionWidget(
                       backup: snapshot.backup,
                       onExportBackup: () {
@@ -93,7 +115,7 @@ class SettingsScreen extends ConsumerWidget {
                             .importBackup();
                       },
                     ),
-                    const SizedBox(height: SpacingTokens.sm),
+                    const SizedBox(height: AppSpacing.sm),
                     RepositorySettingsSectionWidget(
                       repositories: snapshot.repositories,
                       onAddRepository: () {
@@ -110,11 +132,11 @@ class SettingsScreen extends ConsumerWidget {
                             .removeRepository(repositoryId);
                       },
                     ),
-                    const SizedBox(height: SpacingTokens.sm),
+                    const SizedBox(height: AppSpacing.sm),
                     const _SettingsSectionHeader(
                       title: AppStrings.settingsSectionContent,
                     ),
-                    const SizedBox(height: SpacingTokens.sm),
+                    const SizedBox(height: AppSpacing.sm),
                     const _ExtensionsManagerTile(),
                   ],
                 );
@@ -208,7 +230,7 @@ class _AddRepositoryDialogState extends State<_AddRepositoryDialog> {
               labelText: AppStrings.settingsRepositoryNameLabel,
             ),
           ),
-          const SizedBox(height: SpacingTokens.sm),
+          const SizedBox(height: AppSpacing.sm),
           TextField(
             controller: urlController,
             decoration: const InputDecoration(
@@ -249,44 +271,18 @@ class _SettingsSectionHeader extends StatelessWidget {
 }
 
 class _SettingsLoadingCard extends StatelessWidget {
-  const _SettingsLoadingCard();
+  const _SettingsLoadingCard({required this.color});
+
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const SizedBox(height: SpacingTokens.xxxl),
-    );
-  }
-}
-
-class _SettingsErrorCard extends StatelessWidget {
-  const _SettingsErrorCard({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Theme.of(context).colorScheme.errorContainer,
-      child: Padding(
-        padding: InsetsTokens.card,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(message, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: SpacingTokens.sm),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text(AppStrings.retry),
-            ),
-          ],
-        ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
+      child: const SizedBox(height: AppSpacing.xxxl),
     );
   }
 }
@@ -299,12 +295,13 @@ class _ExtensionsManagerTile extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerHighest,
+    return AppCard(
       child: ListTile(
         contentPadding: InsetsTokens.card,
-        leading: Icon(Icons.extension_rounded, color: colorScheme.primary),
+        leading: Icon(
+          Ionicons.extension_puzzle_outline,
+          color: colorScheme.primary,
+        ),
         title: Text(
           AppStrings.extensionsTitle,
           style: theme.textTheme.bodyLarge,
@@ -316,7 +313,7 @@ class _ExtensionsManagerTile extends StatelessWidget {
           ),
         ),
         trailing: Icon(
-          Icons.chevron_right_rounded,
+          Ionicons.chevron_forward_outline,
           color: colorScheme.onSurfaceVariant,
         ),
         onTap: () {

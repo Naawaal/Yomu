@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:moon_design/moon_design.dart';
 
-import 'app_theme_extension.dart';
+import 'app_colors.dart';
+import 'app_colors_extension.dart';
+import 'app_text_styles.dart';
 
 /// Theme factory for application-wide styling.
 ///
@@ -11,7 +13,7 @@ import 'app_theme_extension.dart';
 abstract final class AppTheme {
   /// Primary brand color — drives both [ColorScheme.fromSeed] and
   /// [MoonColors.piccolo] so Material and Moon surfaces stay aligned.
-  static const Color _seedColor = Color(0xFF005E7A);
+  static const Color _seedColor = AppColors.seed;
 
   /// Builds the light application [ThemeData] with [MoonTheme] registered.
   static ThemeData light() {
@@ -23,9 +25,10 @@ abstract final class AppTheme {
         seedColor: _seedColor,
         brightness: Brightness.light,
       ),
+      textTheme: AppTextStyles.resolve(Brightness.light),
       extensions: <ThemeExtension<dynamic>>[
         MoonTheme(tokens: tokens),
-        AppThemeExtension.light(),
+        AppColorsExtension.light(),
       ],
     );
   }
@@ -40,9 +43,10 @@ abstract final class AppTheme {
         seedColor: _seedColor,
         brightness: Brightness.dark,
       ),
+      textTheme: AppTextStyles.resolve(Brightness.dark),
       extensions: <ThemeExtension<dynamic>>[
         MoonTheme(tokens: tokens),
-        AppThemeExtension.dark(),
+        AppColorsExtension.dark(),
       ],
     );
   }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/theme/tokens.dart';
+import '../../../../../core/widgets/widgets.dart';
 import '../../domain/entities/extension_item.dart';
 import '../controllers/extension_detail_provider.dart';
 import '../controllers/extensions_controllers.dart';
@@ -53,12 +55,13 @@ class ExtensionDetailsScreen extends ConsumerWidget {
           SliverPadding(
             padding: InsetsTokens.page,
             sliver: asyncItem.when(
-              loading: () => const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator.adaptive()),
-              ),
+              loading: () =>
+                  const SliverFillRemaining(child: _DetailLoadingState()),
               error: (Object error, StackTrace _) => SliverFillRemaining(
-                child: _ErrorCard(
+                child: ErrorState(
+                  title: AppStrings.unableToLoadApp,
                   message: error.toString(),
+                  retryLabel: AppStrings.retry,
                   onRetry: () => ref
                       .read(extensionsListControllerProvider.notifier)
                       .refresh(),
@@ -66,7 +69,13 @@ class ExtensionDetailsScreen extends ConsumerWidget {
               ),
               data: (ExtensionItem? item) {
                 if (item == null) {
-                  return const SliverFillRemaining(child: _NotFoundCard());
+                  return const SliverFillRemaining(
+                    child: EmptyState(
+                      title: AppStrings.extensionNotFound,
+                      description: AppStrings.noExtensionsBody,
+                      icon: Ionicons.search_outline,
+                    ),
+                  );
                 }
                 return _DetailBody(
                   item: item,
@@ -127,14 +136,14 @@ class _DetailBody extends StatelessWidget {
 
     return SliverList.list(
       children: <Widget>[
-        const SizedBox(height: SpacingTokens.xs),
+        const SizedBox(height: AppSpacing.xs),
         // -- Header card --
         _HeaderCard(item: item, isTrusted: isTrusted),
-        const SizedBox(height: SpacingTokens.md),
+        const SizedBox(height: AppSpacing.md),
         // -- Conditional banners --
         if (item.isNsfw) ...<Widget>[
           const NsfwWarningBanner(),
-          const SizedBox(height: SpacingTokens.md),
+          const SizedBox(height: AppSpacing.md),
         ],
         if (item.hasUpdate) ...<Widget>[
           UpdateBanner(
@@ -142,11 +151,11 @@ class _DetailBody extends StatelessWidget {
             isLoading: isLoading,
             onUpdate: onInstall,
           ),
-          const SizedBox(height: SpacingTokens.md),
+          const SizedBox(height: AppSpacing.md),
         ],
         // -- Metadata card --
         _MetadataCard(item: item),
-        const SizedBox(height: SpacingTokens.md),
+        const SizedBox(height: AppSpacing.md),
         // -- Primary action --
         ExtensionActionButtons(
           item: item,
@@ -156,7 +165,7 @@ class _DetailBody extends StatelessWidget {
           fullWidth: true,
           showInstallWhenUpToDate: false,
         ),
-        const SizedBox(height: SpacingTokens.xxl),
+        const SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
@@ -176,53 +185,45 @@ class _HeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
-      color: colorScheme.surfaceContainer,
-      elevation: 0,
-      child: Padding(
-        padding: InsetsTokens.card,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            CircleAvatar(
-              backgroundColor: colorScheme.tertiaryContainer,
-              child: Icon(
-                Icons.extension_rounded,
-                color: colorScheme.onTertiaryContainer,
-              ),
+    return AppCard(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          CircleAvatar(
+            backgroundColor: colorScheme.tertiaryContainer,
+            child: Icon(
+              Ionicons.extension_puzzle_outline,
+              color: colorScheme.onTertiaryContainer,
             ),
-            const SizedBox(width: SpacingTokens.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    item.name,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: SpacingTokens.xs),
-                  Wrap(
-                    spacing: SpacingTokens.xs,
-                    children: <Widget>[
-                      Chip(
-                        label: Text(item.language.toUpperCase()),
-                        labelStyle: Theme.of(context).textTheme.labelSmall,
-                        padding: EdgeInsets.zero,
-                      ),
-                      Chip(
-                        label: Text(item.versionName),
-                        labelStyle: Theme.of(context).textTheme.labelSmall,
-                        padding: EdgeInsets.zero,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: SpacingTokens.xs),
-                  ExtensionTrustChip(trusted: isTrusted),
-                ],
-              ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(item.name, style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: AppSpacing.xs),
+                Wrap(
+                  spacing: AppSpacing.xs,
+                  children: <Widget>[
+                    Chip(
+                      label: Text(item.language.toUpperCase()),
+                      labelStyle: Theme.of(context).textTheme.labelSmall,
+                      padding: EdgeInsets.zero,
+                    ),
+                    Chip(
+                      label: Text(item.versionName),
+                      labelStyle: Theme.of(context).textTheme.labelSmall,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                ExtensionTrustChip(trusted: isTrusted),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -239,22 +240,18 @@ class _MetadataCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return Card(
-      color: colorScheme.surfaceContainerLow,
-      elevation: 0,
+    return AppCard(
       child: Column(
         children: <Widget>[
           ListTile(
-            leading: const Icon(Icons.label_outline_rounded),
+            leading: const Icon(Ionicons.pricetag_outline),
             title: const Text(AppStrings.packageLabel),
             subtitle: SelectableText(
               item.packageName,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             trailing: IconButton(
-              icon: const Icon(Icons.copy_rounded),
+              icon: const Icon(Ionicons.copy_outline),
               tooltip: 'Copy package name',
               onPressed: () =>
                   Clipboard.setData(ClipboardData(text: item.packageName)),
@@ -262,7 +259,7 @@ class _MetadataCard extends StatelessWidget {
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const Icon(Icons.language_rounded),
+            leading: const Icon(Ionicons.language_outline),
             title: const Text(AppStrings.languageLabel),
             trailing: Text(
               item.language.toUpperCase(),
@@ -271,7 +268,7 @@ class _MetadataCard extends StatelessWidget {
           ),
           const Divider(height: 1),
           ListTile(
-            leading: const Icon(Icons.info_outline_rounded),
+            leading: const Icon(Ionicons.information_circle_outline),
             title: const Text(AppStrings.versionLabel),
             trailing: Text(
               item.versionName,
@@ -284,61 +281,34 @@ class _MetadataCard extends StatelessWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Error / not-found states
-// ---------------------------------------------------------------------------
-
-class _ErrorCard extends StatelessWidget {
-  const _ErrorCard({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
+class _DetailLoadingState extends StatelessWidget {
+  const _DetailLoadingState();
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: InsetsTokens.card,
+    final Color skeletonColor = Theme.of(
+      context,
+    ).colorScheme.surfaceContainerHighest;
+
+    return Padding(
+      padding: InsetsTokens.page,
+      child: LoadingShimmer(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(message, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: SpacingTokens.md),
-            FilledButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text(AppStrings.retry),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: skeletonColor,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: const SizedBox(height: AppSpacing.xxxl),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NotFoundCard extends StatelessWidget {
-  const _NotFoundCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(SpacingTokens.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              Icons.search_off_rounded,
-              size: SpacingTokens.xxl,
-              color: colorScheme.outline,
-            ),
-            const SizedBox(height: SpacingTokens.md),
-            Text(
-              AppStrings.extensionNotFound,
-              style: Theme.of(context).textTheme.titleLarge,
+            const SizedBox(height: AppSpacing.md),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: skeletonColor,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: const SizedBox(height: AppSpacing.xxxl),
             ),
           ],
         ),
