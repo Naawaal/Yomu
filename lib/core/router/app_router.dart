@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/discover/presentation/screens/discover_screen.dart';
 import '../../features/extensions/presentation/screens/extension_details_screen.dart';
-import '../../features/extensions/presentation/screens/extensions_store_screen.dart';
-import '../../features/main/presentation/screens/home_screen.dart';
+import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/main/presentation/screens/main_shell_screen.dart';
 import '../../features/main/presentation/screens/settings_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -34,6 +34,7 @@ final GoRouter appRouter = GoRouter(
             return MainShellScreen(navigationShell: navigationShell);
           },
       branches: <StatefulShellBranch>[
+        // Home tab
         StatefulShellBranch(
           routes: <RouteBase>[
             GoRoute(
@@ -44,6 +45,33 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
+        // Feed tab
+        StatefulShellBranch(
+          routes: <RouteBase>[
+            GoRoute(
+              path: DiscoverRoute.path,
+              pageBuilder: (BuildContext context, GoRouterState state) {
+                return fadeThroughPage(state, const DiscoverScreen());
+              },
+              routes: <RouteBase>[
+                GoRoute(
+                  path: ':${ExtensionDetailsRoute.paramPackageName}',
+                  pageBuilder: (BuildContext context, GoRouterState state) {
+                    final String packageName =
+                        state.pathParameters[ExtensionDetailsRoute
+                            .paramPackageName] ??
+                        '';
+                    return sharedAxisHorizontalPage(
+                      state,
+                      ExtensionDetailsScreen(packageName: packageName),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        // Library tab
         StatefulShellBranch(
           routes: <RouteBase>[
             GoRoute(
@@ -51,36 +79,16 @@ final GoRouter appRouter = GoRouter(
               pageBuilder: (BuildContext context, GoRouterState state) {
                 return fadeThroughPage(state, const SettingsScreen());
               },
-              routes: <RouteBase>[
-                GoRoute(
-                  path: ExtensionsStoreRoute.segment,
-                  pageBuilder: (BuildContext context, GoRouterState state) {
-                    return sharedAxisHorizontalPage(
-                      state,
-                      const ExtensionsStoreScreen(),
-                    );
-                  },
-                  routes: <RouteBase>[
-                    GoRoute(
-                      path: ':${ExtensionDetailsRoute.paramPackageName}',
-                      pageBuilder: (BuildContext context, GoRouterState state) {
-                        final String packageName =
-                            state.pathParameters[ExtensionDetailsRoute
-                                .paramPackageName] ??
-                            '';
-                        return sharedAxisHorizontalPage(
-                          state,
-                          ExtensionDetailsScreen(packageName: packageName),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
             ),
           ],
         ),
       ],
+    ),
+    GoRoute(
+      path: FeedRoute.path,
+      redirect: (BuildContext context, GoRouterState state) {
+        return HomeRoute.path;
+      },
     ),
   ],
 );
@@ -163,12 +171,34 @@ abstract final class OnboardingRoute {
   }
 }
 
-/// Typed route helper for the Home (Feed) tab.
+/// Typed route helper for the Feed tab.
+abstract final class FeedRoute {
+  /// Route path for the feed tab.
+  static const String path = '/feed';
+
+  /// Navigates to the feed tab.
+  static void go(BuildContext context) {
+    context.go(path);
+  }
+}
+
+/// Typed route helper for the Home tab.
 abstract final class HomeRoute {
-  /// Route path for the home/feed tab.
+  /// Route path for the home tab.
   static const String path = '/home';
 
   /// Navigates to the home tab.
+  static void go(BuildContext context) {
+    context.go(path);
+  }
+}
+
+/// Typed route helper for the extensions tab.
+abstract final class DiscoverRoute {
+  /// Route path for the extensions tab.
+  static const String path = '/extensions';
+
+  /// Navigates to the extensions tab.
   static void go(BuildContext context) {
     context.go(path);
   }
@@ -185,13 +215,13 @@ abstract final class SettingsRoute {
   }
 }
 
-/// Typed route helper for the extension store (nested under Settings).
+/// Typed route helper for the extension store route.
 abstract final class ExtensionsStoreRoute {
-  /// URL segment appended to [SettingsRoute.path].
+  /// URL segment for the extension route.
   static const String segment = 'extensions';
 
   /// Full route path for the extensions store.
-  static const String path = '${SettingsRoute.path}/$segment';
+  static const String path = DiscoverRoute.path;
 
   /// Navigates to the extensions store.
   static void go(BuildContext context) {

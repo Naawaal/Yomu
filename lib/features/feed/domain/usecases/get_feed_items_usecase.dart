@@ -1,39 +1,17 @@
-import '../entities/feed_filter.dart';
+import 'package:dartz/dartz.dart';
 import '../entities/feed_item.dart';
-import '../repositories/feed_repository.dart';
+import '../repositories/i_feed_repository.dart';
+import '../../../../core/failure.dart';
 
-/// Parameters for loading feed items.
-class GetFeedItemsParams {
-  /// Creates immutable parameters for [GetFeedItemsUseCase].
-  const GetFeedItemsParams({
-    required this.filter,
-    this.page = 1,
-    this.pageSize = 20,
-  });
-
-  /// Filter to apply while loading items.
-  final FeedFilter filter;
-
-  /// One-based page index.
-  final int page;
-
-  /// Maximum number of results to return.
-  final int pageSize;
-}
-
-/// Loads feed items from the configured repository.
+/// Use case for fetching feed items.
 class GetFeedItemsUseCase {
-  /// Creates a use case for reading feed items.
-  const GetFeedItemsUseCase(this._repository);
+  const GetFeedItemsUseCase(this._repo);
+  final IFeedRepository _repo;
 
-  final FeedRepository _repository;
-
-  /// Executes the use case.
-  Future<List<FeedItem>> call(GetFeedItemsParams params) {
-    return _repository.getFeedItems(
-      filter: params.filter,
-      page: params.page,
-      pageSize: params.pageSize,
-    );
+  Future<Either<Failure, List<FeedItem>>> call({
+    Map<String, dynamic>? filters,
+    int? page,
+  }) {
+    return _repo.fetchFeedItems(filters: filters, page: page);
   }
 }

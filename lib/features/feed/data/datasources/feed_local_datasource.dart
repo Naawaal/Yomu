@@ -18,6 +18,10 @@ abstract class FeedLocalDataSource {
 }
 
 /// In-memory feed cache used as baseline local datasource.
+///
+/// Note: This implementation uses the legacy FeedFilter which may reference
+/// fields not present in the current FeedItem schema. For the new feed feature,
+/// use FeedRemoteDataSource and FeedRepositoryImpl directly.
 class InMemoryFeedLocalDataSource implements FeedLocalDataSource {
   InMemoryFeedLocalDataSource();
 
@@ -34,30 +38,24 @@ class InMemoryFeedLocalDataSource implements FeedLocalDataSource {
     int page = 1,
     int pageSize = 20,
   }) async {
+    // Filter by query on title and subtitle only
     final Iterable<FeedItemModel> filtered = _cache.where((FeedItemModel item) {
-      final bool matchesRead = filter.includeRead || !item.isRead;
       final bool matchesQuery =
           filter.query.isEmpty ||
           item.title.toLowerCase().contains(filter.query.toLowerCase()) ||
-          item.subtitle.toLowerCase().contains(filter.query.toLowerCase()) ||
-          item.sourceName.toLowerCase().contains(filter.query.toLowerCase());
-      return matchesRead && matchesQuery;
+          item.subtitle.toLowerCase().contains(filter.query.toLowerCase());
+      return matchesQuery;
     });
 
-    final List<FeedItemModel> sorted = filtered.toList(growable: false)
-      ..sort((FeedItemModel a, FeedItemModel b) {
-        if (filter.sortOrder == FeedSortOrder.newestFirst) {
-          return b.updatedAt.compareTo(a.updatedAt);
-        }
-        return a.updatedAt.compareTo(b.updatedAt);
-      });
+    // Simple pagination without sorting (sorting requires timestamp not in new schema)
+    final List<FeedItemModel> items = filtered.toList(growable: false);
 
     final int start = ((page < 1 ? 1 : page) - 1) * pageSize;
-    if (start >= sorted.length) {
+    if (start >= items.length) {
       return const <FeedItemModel>[];
     }
-    final int end = (start + pageSize).clamp(0, sorted.length);
-    return sorted.sublist(start, end);
+    final int end = (start + pageSize).clamp(0, items.length);
+    return items.sublist(start, end);
   }
 
   @override

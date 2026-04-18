@@ -127,6 +127,12 @@ abstract final class AppStrings {
   /// Bottom navigation label for the Home tab.
   static const String home = 'Home';
 
+  /// Bottom navigation label for the Feed tab.
+  static const String feed = 'Feed';
+
+  /// Bottom navigation label for the Library tab.
+  static const String library = 'Library';
+
   /// Bottom navigation label for the Settings tab.
   static const String settings = 'Settings';
 
@@ -164,6 +170,40 @@ abstract final class AppStrings {
 
   /// Feed error heading text.
   static const String feedLoadFailed = 'Unable to load feed';
+
+  /// Feed status chip text for unread/live updates.
+  static const String feedStatusLive = 'Live';
+
+  /// Feed status chip text for read items.
+  static const String feedStatusRead = 'Read';
+
+  /// Hero section label for spotlight feed item.
+  static const String feedSpotlightLabel = 'Spotlight';
+
+  /// Quick stat label for unread item count.
+  static const String feedUnreadCountLabel = 'Unread updates';
+
+  /// Quick stat label for last successful sync.
+  static const String feedLastSyncLabel = 'Last sync';
+
+  /// Fallback value when no last-sync timestamp is available.
+  static const String feedLastSyncUnknown = 'Not available';
+
+  /// Relative-time label for very recent updates.
+  static const String feedTimeNow = 'Now';
+
+  /// Relative-time suffix for minute-based labels.
+  static const String feedMinutesAgoSuffix = 'm ago';
+
+  /// Relative-time suffix for hour-based labels.
+  static const String feedHoursAgoSuffix = 'h ago';
+
+  /// Relative-time suffix for day-based labels.
+  static const String feedDaysAgoSuffix = 'd ago';
+
+  /// Library tab placeholder body copy.
+  static const String libraryPlaceholderBody =
+      'Your saved titles and progress will appear here.';
 
   /// Settings section title for theme controls.
   static const String settingsSectionTheme = 'Theme';

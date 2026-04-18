@@ -18,6 +18,9 @@ dependencies:
   ionicons: ^0.2.2
   shimmer: ^3.0.0
   shared_preferences: ^2.5.5
+  equatable: ^2.0.8
+  meta: ^1.17.0
+  dartz: ^0.10.1
 
 dev_dependencies:
   flutter_test:

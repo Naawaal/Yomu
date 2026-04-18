@@ -4,6 +4,7 @@ import 'package:ionicons/ionicons.dart';
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/theme/tokens.dart';
 import '../../domain/entities/feed_item.dart';
+import 'feed_card_widget.dart';
 
 /// Sliver list for rendering feed items and pagination control.
 class FeedListWidget extends StatelessWidget {
@@ -33,44 +34,27 @@ class FeedListWidget extends StatelessWidget {
         }
 
         final FeedItem item = items[index];
-        final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-        return Padding(
+        final Widget tile = FeedCardWidget(
           key: ValueKey<String>(item.id),
-          padding: const EdgeInsets.only(bottom: SpacingTokens.sm),
-          child: Card(
-            elevation: 0,
-            color: colorScheme.surfaceContainerHighest,
-            child: ListTile(
-              contentPadding: InsetsTokens.card,
-              leading: Icon(
-                item.isRead
-                    ? Ionicons.mail_open_outline
-                    : Ionicons.mail_unread_outline,
-                color: item.isRead
-                    ? colorScheme.onSurfaceVariant
-                    : colorScheme.primary,
+          item: item,
+          onTap: () {},
+        );
+
+        // Staggered animation: 60ms per item
+        return TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: 1),
+          duration: Duration(milliseconds: 200 + (index * 60)),
+          builder: (BuildContext context, double value, Widget? child) {
+            return Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, (1 - value) * AppSpacing.md),
+                child: child,
               ),
-              title: Text(
-                item.title,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: SpacingTokens.xs),
-                child: Text(
-                  '${item.sourceName} • ${item.subtitle}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              trailing: Icon(
-                Ionicons.chevron_forward_outline,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              onTap: () {},
-            ),
-          ),
+            );
+          },
+          child: tile,
         );
       }, childCount: items.length + 1),
     );
@@ -86,14 +70,11 @@ class _LoadMoreSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!hasMore) {
-      return const SizedBox(height: SpacingTokens.sm);
+      return const SizedBox(height: AppSpacing.sm);
     }
 
     return Padding(
-      padding: const EdgeInsets.only(
-        top: SpacingTokens.xs,
-        bottom: SpacingTokens.xl,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.xl),
       child: Align(
         child: OutlinedButton.icon(
           onPressed: onLoadMore,

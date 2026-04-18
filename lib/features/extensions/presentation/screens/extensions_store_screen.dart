@@ -8,6 +8,7 @@ import '../../../../../core/theme/tokens.dart';
 import '../../../../../core/widgets/widgets.dart';
 import '../../domain/entities/extension_item.dart';
 import '../controllers/extensions_controllers.dart';
+import '../widgets/extension_grid_skeleton.dart';
 import '../widgets/extension_tile.dart';
 
 final _extensionsSearchQueryProvider = StateProvider.autoDispose<String>(
@@ -82,7 +83,13 @@ class ExtensionsStoreScreen extends ConsumerWidget {
                 padding: InsetsTokens.page,
                 sliver: asyncExtensions.when(
                   loading: () => SliverToBoxAdapter(
-                    child: _LoadingGrid(crossAxisCount: crossAxisCount),
+                    child: ExtensionGridSkeleton(
+                      crossAxisCount:
+                          constraints.maxWidth >= ScreenBreakpoints.medium
+                          ? 2
+                          : 1,
+                      itemCount: 4,
+                    ),
                   ),
                   error: (Object error, StackTrace stackTrace) =>
                       SliverToBoxAdapter(
@@ -377,41 +384,6 @@ class _AnimatedExtensionsGridState extends State<_AnimatedExtensionsGrid> {
           child: tile,
         );
       }, childCount: widget.items.length),
-    );
-  }
-}
-
-class _LoadingGrid extends StatelessWidget {
-  const _LoadingGrid({required this.crossAxisCount});
-
-  final int crossAxisCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color skeletonColor = Theme.of(
-      context,
-    ).colorScheme.surfaceContainerHighest;
-
-    return LoadingShimmer(
-      child: GridView.builder(
-        shrinkWrap: true,
-        itemCount: 6,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          crossAxisSpacing: AppSpacing.md,
-          mainAxisSpacing: AppSpacing.md,
-          childAspectRatio: 2.0,
-        ),
-        itemBuilder: (BuildContext context, int index) {
-          return DecoratedBox(
-            decoration: BoxDecoration(
-              color: skeletonColor,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-          );
-        },
-      ),
     );
   }
 }

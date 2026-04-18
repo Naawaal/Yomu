@@ -1,96 +1,113 @@
-import '../../domain/entities/feed_filter.dart';
 import '../models/feed_item_model.dart';
 
-/// Contract for remote feed retrieval operations.
+/// Abstracts remote data operations for the feed.
 abstract class FeedRemoteDataSource {
-  /// Fetches feed items from remote source with filter and pagination.
+  /// Fetches feed items from the remote source.
   Future<List<FeedItemModel>> fetchFeedItems({
-    required FeedFilter filter,
-    int page = 1,
-    int pageSize = 20,
+    Map<String, dynamic>? filters,
+    int? page,
   });
+
+  /// Bookmarks a feed item by id.
+  Future<void> bookmarkFeedItem(String id);
+
+  /// Removes bookmark from a feed item by id.
+  Future<void> unbookmarkFeedItem(String id);
 }
 
-/// Mock remote datasource until real backend/bridge integration is wired.
+/// In-memory mock implementation used by legacy and new feed providers.
 class MockFeedRemoteDataSource implements FeedRemoteDataSource {
-  MockFeedRemoteDataSource() : _items = _seedItems();
+  MockFeedRemoteDataSource()
+    : _items = <FeedItemModel>[
+        const FeedItemModel(
+          id: 'feed-001',
+          title: 'Kaiju No. 8',
+          subtitle: 'Chapter 122 is now available',
+          imageUrl: '',
+          metadata: 'MangaDex • 40m ago',
+          isBookmarked: false,
+        ),
+        const FeedItemModel(
+          id: 'feed-002',
+          title: 'Blue Lock',
+          subtitle: 'Chapter 307 released',
+          imageUrl: '',
+          metadata: 'NekoScans • 2h ago',
+          isBookmarked: false,
+        ),
+        const FeedItemModel(
+          id: 'feed-003',
+          title: 'Frieren: Beyond Journey\'s End',
+          subtitle: 'Volume update synced',
+          imageUrl: '',
+          metadata: 'MangaLife • 5h ago',
+          isBookmarked: true,
+        ),
+      ];
 
   final List<FeedItemModel> _items;
 
   @override
+  Future<void> bookmarkFeedItem(String id) async {
+    final int index = _items.indexWhere((FeedItemModel item) => item.id == id);
+    if (index < 0) {
+      return;
+    }
+
+    final FeedItemModel current = _items[index];
+    _items[index] = FeedItemModel(
+      id: current.id,
+      title: current.title,
+      subtitle: current.subtitle,
+      imageUrl: current.imageUrl,
+      metadata: current.metadata,
+      isBookmarked: true,
+    );
+  }
+
+  @override
   Future<List<FeedItemModel>> fetchFeedItems({
-    required FeedFilter filter,
-    int page = 1,
-    int pageSize = 20,
+    Map<String, dynamic>? filters,
+    int? page,
   }) async {
-    final String query = filter.query.trim().toLowerCase();
+    final String query = (filters?['query'] as String? ?? '').toLowerCase();
+    final int safePage = page == null || page < 1 ? 1 : page;
+    const int pageSize = 20;
 
-    final Iterable<FeedItemModel> filtered = _items.where((FeedItemModel item) {
-      final bool matchesRead = filter.includeRead || !item.isRead;
-      final bool matchesQuery =
-          query.isEmpty ||
-          item.title.toLowerCase().contains(query) ||
-          item.subtitle.toLowerCase().contains(query) ||
-          item.sourceName.toLowerCase().contains(query);
-      return matchesRead && matchesQuery;
-    });
+    final List<FeedItemModel> filtered = _items
+        .where((FeedItemModel item) {
+          if (query.isEmpty) {
+            return true;
+          }
+          return item.title.toLowerCase().contains(query) ||
+              item.subtitle.toLowerCase().contains(query) ||
+              item.metadata.toLowerCase().contains(query);
+        })
+        .toList(growable: false);
 
-    final List<FeedItemModel> sorted = filtered.toList(growable: false)
-      ..sort((FeedItemModel a, FeedItemModel b) {
-        if (filter.sortOrder == FeedSortOrder.newestFirst) {
-          return b.updatedAt.compareTo(a.updatedAt);
-        }
-        return a.updatedAt.compareTo(b.updatedAt);
-      });
-
-    final int safePage = page < 1 ? 1 : page;
     final int start = (safePage - 1) * pageSize;
-    if (start >= sorted.length) {
+    if (start >= filtered.length) {
       return const <FeedItemModel>[];
     }
-    final int end = (start + pageSize).clamp(0, sorted.length);
-    return sorted.sublist(start, end);
+    final int end = (start + pageSize).clamp(0, filtered.length);
+    return filtered.sublist(start, end);
   }
-}
 
-List<FeedItemModel> _seedItems() {
-  final DateTime now = DateTime.now();
-  return <FeedItemModel>[
-    FeedItemModel(
-      id: 'feed-01',
-      sourceName: 'MangaDex',
-      title: 'Kaiju No. 8',
-      subtitle: 'Chapter 122 is now available',
-      updatedAt: now.subtract(const Duration(minutes: 40)),
-      isRead: false,
-      coverImageUrl: null,
-    ),
-    FeedItemModel(
-      id: 'feed-02',
-      sourceName: 'NekoScans',
-      title: 'Blue Lock',
-      subtitle: 'Chapter 307 released',
-      updatedAt: now.subtract(const Duration(hours: 2)),
-      isRead: false,
-      coverImageUrl: null,
-    ),
-    FeedItemModel(
-      id: 'feed-03',
-      sourceName: 'MangaLife',
-      title: 'Frieren: Beyond Journey\'s End',
-      subtitle: 'Volume update synced',
-      updatedAt: now.subtract(const Duration(hours: 5)),
-      isRead: true,
-      coverImageUrl: null,
-    ),
-    FeedItemModel(
-      id: 'feed-04',
-      sourceName: 'Comick',
-      title: 'Sakamoto Days',
-      subtitle: 'New chapter available',
-      updatedAt: now.subtract(const Duration(days: 1)),
-      isRead: true,
-      coverImageUrl: null,
-    ),
-  ];
+  @override
+  Future<void> unbookmarkFeedItem(String id) async {
+    final int index = _items.indexWhere((FeedItemModel item) => item.id == id);
+    if (index < 0) {
+      return;
+    }
+
+    final FeedItemModel current = _items[index];
+    _items[index] = FeedItemModel(
+      id: current.id,
+      title: current.title,
+      subtitle: current.subtitle,
+      imageUrl: current.imageUrl,
+      metadata: current.metadata,
+      isBookmarked: false,
+    );
+  }
 }

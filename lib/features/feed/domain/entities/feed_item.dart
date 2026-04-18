@@ -1,34 +1,32 @@
-/// A single item rendered in the user's home feed.
-class FeedItem {
-  /// Creates a feed item.
+import 'package:equatable/equatable.dart';
+import 'package:meta/meta.dart';
+
+/// Domain entity representing a single feed item.
+@immutable
+class FeedItem extends Equatable {
   const FeedItem({
     required this.id,
-    required this.sourceName,
     required this.title,
     required this.subtitle,
-    required this.updatedAt,
-    required this.isRead,
-    this.coverImageUrl,
+    required this.imageUrl,
+    required this.metadata,
+    required this.isBookmarked,
   });
 
-  /// Stable item identifier.
   final String id;
-
-  /// Human-readable source name.
-  final String sourceName;
-
-  /// Primary text shown in feed cards.
   final String title;
-
-  /// Secondary text shown in feed cards.
   final String subtitle;
+  final String imageUrl;
+  final String metadata;
+  final bool isBookmarked;
 
-  /// Last update timestamp for this item.
-  final DateTime updatedAt;
-
-  /// Whether the user has read this item update.
-  final bool isRead;
-
-  /// Optional remote image URL for the feed card thumbnail.
-  final String? coverImageUrl;
+  @override
+  List<Object?> get props => [
+    id,
+    title,
+    subtitle,
+    imageUrl,
+    metadata,
+    isBookmarked,
+  ];
 }

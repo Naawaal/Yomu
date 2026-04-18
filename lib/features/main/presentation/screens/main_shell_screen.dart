@@ -32,6 +32,11 @@ class MainShellScreen extends StatelessWidget {
             label: AppStrings.home,
           ),
           AppNavDestination(
+            icon: Icon(Ionicons.extension_puzzle_outline),
+            selectedIcon: Icon(Ionicons.extension_puzzle),
+            label: AppStrings.extensionsTitle,
+          ),
+          AppNavDestination(
             icon: Icon(Ionicons.settings_outline),
             selectedIcon: Icon(Ionicons.settings),
             label: AppStrings.settings,

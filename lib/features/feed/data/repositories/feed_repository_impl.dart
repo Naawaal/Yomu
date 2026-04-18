@@ -1,52 +1,44 @@
-import '../../domain/entities/feed_filter.dart';
+import 'package:dartz/dartz.dart';
 import '../../domain/entities/feed_item.dart';
-import '../../domain/repositories/feed_repository.dart';
-import '../datasources/feed_local_datasource.dart';
+import '../../domain/repositories/i_feed_repository.dart';
 import '../datasources/feed_remote_datasource.dart';
-import '../models/feed_item_model.dart';
+import '../../../../core/failure.dart';
 
-/// Repository implementation that combines remote data with local cache fallback.
-class FeedRepositoryImpl implements FeedRepository {
-  /// Creates a feed repository implementation.
-  const FeedRepositoryImpl({
-    required FeedRemoteDataSource remoteDataSource,
-    required FeedLocalDataSource localDataSource,
-  }) : _remoteDataSource = remoteDataSource,
-       _localDataSource = localDataSource;
-
-  final FeedRemoteDataSource _remoteDataSource;
-  final FeedLocalDataSource _localDataSource;
+/// Implementation of IFeedRepository with error mapping.
+class FeedRepositoryImpl implements IFeedRepository {
+  FeedRepositoryImpl(this._remote);
+  final FeedRemoteDataSource _remote;
 
   @override
-  Future<List<FeedItem>> getFeedItems({
-    required FeedFilter filter,
-    int page = 1,
-    int pageSize = 20,
+  Future<Either<Failure, List<FeedItem>>> fetchFeedItems({
+    Map<String, dynamic>? filters,
+    int? page,
   }) async {
     try {
-      final List<FeedItemModel> remoteItems = await _remoteDataSource
-          .fetchFeedItems(filter: filter, page: page, pageSize: pageSize);
-
-      if (page == 1) {
-        await _localDataSource.saveFeedItems(remoteItems);
-      }
-
-      return remoteItems;
-    } catch (_) {
-      final List<FeedItemModel> cachedItems = await _localDataSource
-          .getFeedItems(filter: filter, page: page, pageSize: pageSize);
-      return cachedItems;
+      final items = await _remote.fetchFeedItems(filters: filters, page: page);
+      return Right(items);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
     }
   }
 
   @override
-  Future<List<FeedItem>> refreshFeed({
-    required FeedFilter filter,
-    int pageSize = 20,
-  }) async {
-    final List<FeedItemModel> refreshedItems = await _remoteDataSource
-        .fetchFeedItems(filter: filter, page: 1, pageSize: pageSize);
-    await _localDataSource.saveFeedItems(refreshedItems);
-    return refreshedItems;
+  Future<Either<Failure, Unit>> bookmarkFeedItem(String id) async {
+    try {
+      await _remote.bookmarkFeedItem(id);
+      return const Right(unit);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Unit>> unbookmarkFeedItem(String id) async {
+    try {
+      await _remote.unbookmarkFeedItem(id);
+      return const Right(unit);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
   }
 }

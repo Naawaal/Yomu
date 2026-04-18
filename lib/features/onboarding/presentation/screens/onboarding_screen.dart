@@ -11,7 +11,7 @@ import '../../../../../core/theme/tokens.dart';
 import '../../../../../core/widgets/widgets.dart';
 import '../controllers/onboarding_controller.dart';
 
-const String _extensionsRoutePath = '/home';
+const String _feedRoutePath = '/feed';
 const String _onboardingRoutePath = '/onboarding';
 
 /// Premium onboarding flow for first launch and future logout resets.
@@ -34,7 +34,7 @@ class OnboardingScreen extends ConsumerWidget {
           if (completed) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (context.mounted) {
-                context.go(_extensionsRoutePath);
+                context.go(_feedRoutePath);
               }
             });
           }
@@ -81,7 +81,7 @@ class OnboardingGateScreen extends ConsumerWidget {
           if (!context.mounted) {
             return;
           }
-          context.go(completed ? _extensionsRoutePath : _onboardingRoutePath);
+          context.go(completed ? _feedRoutePath : _onboardingRoutePath);
         });
         return const _LaunchLoadingScaffold();
       },

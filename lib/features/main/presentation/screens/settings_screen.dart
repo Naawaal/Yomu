@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ionicons/ionicons.dart';
 
 import '../../../../core/constants/app_strings.dart';
-import '../../../../core/router/app_router.dart';
 import '../../../../core/theme/tokens.dart';
 import '../../../../core/widgets/widgets.dart';
 import '../../../settings/domain/entities/repository_config.dart';
@@ -155,11 +153,6 @@ class SettingsScreen extends ConsumerWidget {
                       },
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    const _SettingsSectionHeader(
-                      title: AppStrings.settingsSectionContent,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    const _ExtensionsManagerTile(),
                   ],
                 );
               },
@@ -315,43 +308,6 @@ class _SettingsLoadingCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: const SizedBox(height: AppSpacing.xxxl),
-    );
-  }
-}
-
-class _ExtensionsManagerTile extends StatelessWidget {
-  const _ExtensionsManagerTile();
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return AppCard(
-      child: AppListTile(
-        contentPadding: EdgeInsets.zero,
-        leading: Icon(
-          Ionicons.extension_puzzle_outline,
-          color: colorScheme.primary,
-        ),
-        title: Text(
-          AppStrings.extensionsTitle,
-          style: theme.textTheme.titleMedium,
-        ),
-        subtitle: Text(
-          AppStrings.settingsExtensionsSubtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        trailing: Icon(
-          Ionicons.chevron_forward_outline,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        onTap: () {
-          ExtensionsStoreRoute.go(context);
-        },
-      ),
     );
   }
 }

@@ -69,22 +69,26 @@ void main() {
       expect(OnboardingRoute.path, equals('/onboarding'));
     });
 
-    test('HomeRoute.path == "/home"', () {
-      expect(HomeRoute.path, equals('/home'));
+    test('FeedRoute.path == "/feed"', () {
+      expect(FeedRoute.path, equals('/feed'));
+    });
+
+    test('DiscoverRoute.path == "/extensions"', () {
+      expect(DiscoverRoute.path, equals('/extensions'));
     });
 
     test('SettingsRoute.path == "/settings"', () {
       expect(SettingsRoute.path, equals('/settings'));
     });
 
-    test('ExtensionsStoreRoute.path == "/settings/extensions"', () {
-      expect(ExtensionsStoreRoute.path, equals('/settings/extensions'));
+    test('ExtensionsStoreRoute.path == "/extensions"', () {
+      expect(ExtensionsStoreRoute.path, equals('/extensions'));
     });
 
     test('ExtensionDetailsRoute.location builds correct path', () {
       expect(
         ExtensionDetailsRoute.location('com.example.pkg'),
-        equals('/settings/extensions/com.example.pkg'),
+        equals('/extensions/com.example.pkg'),
       );
     });
   });
@@ -94,11 +98,8 @@ void main() {
   // ─────────────────────────────────────────────────────────────────────────
 
   group('Derived path helpers', () {
-    test('ExtensionsStoreRoute.path is SettingsRoute.path + segment', () {
-      expect(
-        ExtensionsStoreRoute.path,
-        equals('${SettingsRoute.path}/${ExtensionsStoreRoute.segment}'),
-      );
+    test('ExtensionsStoreRoute.path matches discover route path', () {
+      expect(ExtensionsStoreRoute.path, equals(DiscoverRoute.path));
     });
 
     test(
