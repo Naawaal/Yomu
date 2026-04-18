@@ -138,6 +138,8 @@ class AppTextInput extends StatelessWidget {
         errorText: errorText,
         helperStyle: textTheme.bodySmall,
         errorStyle: textTheme.bodySmall,
+        helperMaxLines: 2,
+        errorMaxLines: 2,
         prefixIcon: leadingIcon,
         suffixIcon: trailingWidget,
         border: defaultBorder,
@@ -145,7 +147,7 @@ class AppTextInput extends StatelessWidget {
         focusedBorder: focusedBorder,
         errorBorder: errorBorder,
         focusedErrorBorder: errorBorder,
-        fillColor: colorScheme.surface,
+        fillColor: colorScheme.surfaceContainerLowest,
         filled: true,
       ),
     );

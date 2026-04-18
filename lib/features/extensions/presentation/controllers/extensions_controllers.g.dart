@@ -7,9 +7,9 @@ part of 'extensions_controllers.dart';
 // **************************************************************************
 
 String _$extensionRepositoryHash() =>
-    r'995be0795668681e6589f99f7314bd305761b00f';
+    r'1c594ac6cd1c690485d71190a2245bf25b00ea79';
 
-/// Provides the extension repository implementation.
+/// Provides the composed extension repository implementation.
 ///
 /// Copied from [extensionRepository].
 @ProviderFor(extensionRepository)
@@ -51,7 +51,7 @@ final extensionsListControllerProvider =
 typedef _$ExtensionsListController =
     AutoDisposeAsyncNotifier<List<ExtensionItem>>;
 String _$extensionActionControllerHash() =>
-    r'339b7185e32fcfab34094a2cff1ad26261702824';
+    r'75b7894eb70da463569f2554231749687d77a171';
 
 /// Handles mutating extension actions.
 ///

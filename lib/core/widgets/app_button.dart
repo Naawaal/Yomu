@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:moon_design/moon_design.dart';
 
 import '../theme/tokens.dart';
 
@@ -11,42 +10,35 @@ enum AppButtonVariant {
   /// Secondary outlined button — use for secondary actions.
   outlined,
 
+  /// Tonal button — use for soft secondary actions.
+  tonal,
+
   /// Destructive filled button — use for irreversible actions.
   destructive,
 }
 
 /// Size variants for [AppButton].
 enum AppButtonSize {
-  /// Small button (Moon `xs`).
+  /// Small button — 40 dp height.
   sm,
 
-  /// Medium button (Moon `sm`) — default.
+  /// Medium button — 48 dp height (default).
   md,
 
-  /// Large button (Moon `md`).
+  /// Large button — 56 dp height.
   lg,
 }
 
-/// App-standard button built on the design system.
+/// App-standard button built on Material 3 primitives.
 ///
-/// Wraps [MoonFilledButton], [MoonOutlinedButton], or a destructive
-/// [FilledButton] variant depending on [variant].
+/// Uses [FilledButton], [OutlinedButton], or [FilledButton.tonal] depending
+/// on [variant]. All colors derive from [ColorScheme] — no hardcoded values.
 ///
 /// ```dart
-/// AppButton(
-///   label: 'Install',
-///   onPressed: handleInstall,
-/// )
-///
-/// AppButton.outlined(
-///   label: 'Cancel',
-///   onPressed: Navigator.of(context).pop,
-/// )
-///
-/// AppButton.destructive(
-///   label: 'Delete',
-///   onPressed: onDelete,
-/// )
+/// AppButton(label: 'Install', onPressed: handleInstall)
+/// AppButton.outlined(label: 'Cancel', onPressed: Navigator.of(context).pop)
+/// AppButton.tonal(label: 'Save Draft', onPressed: handleSave)
+/// AppButton.destructive(label: 'Delete', onPressed: handleDelete)
 /// ```
 class AppButton extends StatelessWidget {
   /// Creates a filled [AppButton].
@@ -74,6 +66,18 @@ class AppButton extends StatelessWidget {
     this.isLoading = false,
   }) : variant = AppButtonVariant.outlined;
 
+  /// Creates a tonal [AppButton].
+  const AppButton.tonal({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.size = AppButtonSize.md,
+    this.leadingIcon,
+    this.trailingIcon,
+    this.isFullWidth = false,
+    this.isLoading = false,
+  }) : variant = AppButtonVariant.tonal;
+
   /// Creates a destructive [AppButton].
   const AppButton.destructive({
     super.key,
@@ -92,7 +96,7 @@ class AppButton extends StatelessWidget {
   /// Called when the button is tapped. Pass `null` to disable.
   final VoidCallback? onPressed;
 
-  /// Visual style — filled, outlined, or ghost.
+  /// Visual style — filled, outlined, tonal, or destructive.
   final AppButtonVariant variant;
 
   /// Size — sm, md (default), or lg.
@@ -107,62 +111,92 @@ class AppButton extends StatelessWidget {
   /// When `true` the button expands to fill available horizontal space.
   final bool isFullWidth;
 
-  /// When `true` the button shows a [MoonCircularLoader] instead of the label.
+  /// When `true` the button shows a loading spinner instead of the label.
+  /// The button footprint (height/width) does not change during loading.
   final bool isLoading;
 
-  static const double _destructiveMinWidth = 64;
-
-  MoonButtonSize get _moonButtonSize => switch (size) {
-    AppButtonSize.sm => MoonButtonSize.xs,
-    AppButtonSize.md => MoonButtonSize.sm,
-    AppButtonSize.lg => MoonButtonSize.md,
+  double get _height => switch (size) {
+    AppButtonSize.sm => 40.0,
+    AppButtonSize.md => 48.0,
+    AppButtonSize.lg => 56.0,
   };
 
-  Widget get _loadingIndicator =>
-      const MoonCircularLoader(circularLoaderSize: MoonCircularLoaderSize.xs);
+  double get _spinnerSize => switch (size) {
+    AppButtonSize.sm => 16.0,
+    AppButtonSize.md => 20.0,
+    AppButtonSize.lg => 22.0,
+  };
 
-  Widget _resolvedLabel(BuildContext context) {
-    if (isLoading) {
-      return _loadingIndicator;
-    }
-    return Text(label, style: Theme.of(context).textTheme.labelLarge);
+  /// Base [ButtonStyle] enforcing the correct height and optional full width.
+  ButtonStyle _baseStyle() {
+    return ButtonStyle(
+      minimumSize: WidgetStatePropertyAll<Size>(
+        Size(isFullWidth ? double.infinity : 64.0, _height),
+      ),
+    );
+  }
+
+  Widget _spinner(Color color) {
+    return SizedBox(
+      width: _spinnerSize,
+      height: _spinnerSize,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        valueColor: AlwaysStoppedAnimation<Color>(color),
+      ),
+    );
+  }
+
+  Widget _child(Widget spinner) {
+    if (isLoading) return spinner;
+    if (leadingIcon == null && trailingIcon == null) return Text(label);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        if (leadingIcon != null) ...<Widget>[
+          leadingIcon!,
+          const SizedBox(width: AppSpacing.xs),
+        ],
+        Text(label),
+        if (trailingIcon != null) ...<Widget>[
+          const SizedBox(width: AppSpacing.xs),
+          trailingIcon!,
+        ],
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     final VoidCallback? effectiveOnPressed = isLoading ? null : onPressed;
-    final Widget resolvedLabel = _resolvedLabel(context);
 
     return switch (variant) {
-      AppButtonVariant.filled => MoonFilledButton(
-        onTap: effectiveOnPressed,
-        buttonSize: _moonButtonSize,
-        isFullWidth: isFullWidth,
-        showPulseEffect: false,
-        leading: leadingIcon,
-        trailing: trailingIcon,
-        label: resolvedLabel,
+      AppButtonVariant.filled => FilledButton(
+        onPressed: effectiveOnPressed,
+        style: _baseStyle(),
+        child: _child(_spinner(cs.onPrimary)),
       ),
-      AppButtonVariant.outlined => MoonOutlinedButton(
-        onTap: effectiveOnPressed,
-        buttonSize: _moonButtonSize,
-        isFullWidth: isFullWidth,
-        showPulseEffect: false,
-        leading: leadingIcon,
-        trailing: trailingIcon,
-        label: resolvedLabel,
+      AppButtonVariant.outlined => OutlinedButton(
+        onPressed: effectiveOnPressed,
+        style: _baseStyle(),
+        child: _child(_spinner(cs.primary)),
+      ),
+      AppButtonVariant.tonal => FilledButton.tonal(
+        onPressed: effectiveOnPressed,
+        style: _baseStyle(),
+        child: _child(_spinner(cs.onSecondaryContainer)),
       ),
       AppButtonVariant.destructive => FilledButton(
         onPressed: effectiveOnPressed,
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(_destructiveMinWidth, AppSpacing.xxl),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
+        style: _baseStyle().copyWith(
+          backgroundColor: WidgetStatePropertyAll<Color>(cs.error),
+          foregroundColor: WidgetStatePropertyAll<Color>(cs.onError),
+          overlayColor: WidgetStatePropertyAll<Color>(
+            cs.onError.withValues(alpha: 0.12),
           ),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          foregroundColor: Theme.of(context).colorScheme.onError,
         ),
-        child: resolvedLabel,
+        child: _child(_spinner(cs.onError)),
       ),
     };
   }

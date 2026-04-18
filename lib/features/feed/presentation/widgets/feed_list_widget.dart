@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/theme/tokens.dart';
@@ -44,8 +45,8 @@ class FeedListWidget extends StatelessWidget {
               contentPadding: InsetsTokens.card,
               leading: Icon(
                 item.isRead
-                    ? Icons.mark_email_read_rounded
-                    : Icons.mark_email_unread_rounded,
+                    ? Ionicons.mail_open_outline
+                    : Ionicons.mail_unread_outline,
                 color: item.isRead
                     ? colorScheme.onSurfaceVariant
                     : colorScheme.primary,
@@ -64,7 +65,7 @@ class FeedListWidget extends StatelessWidget {
                 ),
               ),
               trailing: Icon(
-                Icons.chevron_right_rounded,
+                Ionicons.chevron_forward_outline,
                 color: colorScheme.onSurfaceVariant,
               ),
               onTap: () {},
@@ -96,7 +97,7 @@ class _LoadMoreSection extends StatelessWidget {
       child: Align(
         child: OutlinedButton.icon(
           onPressed: onLoadMore,
-          icon: const Icon(Icons.expand_more_rounded),
+          icon: const Icon(Ionicons.chevron_down_outline),
           label: const Text(AppStrings.feedLoadMore),
         ),
       ),

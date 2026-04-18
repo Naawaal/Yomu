@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/router/app_router.dart';
@@ -26,7 +27,7 @@ class FeedEmptyStateWidget extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Icon(
-                  Icons.auto_stories_outlined,
+                  Ionicons.book_outline,
                   size: SpacingTokens.xxxl,
                   color: colorScheme.onSurfaceVariant,
                 ),

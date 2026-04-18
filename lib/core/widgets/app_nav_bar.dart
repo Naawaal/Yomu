@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../theme/tokens.dart';
-
 /// Single destination item used by [AppNavBar].
 class AppNavDestination {
   /// Creates a destination model.
@@ -22,6 +20,9 @@ class AppNavDestination {
 }
 
 /// App-standard bottom navigation wrapper.
+///
+/// Delegates all color, indicator, and label behavior to [NavigationBarTheme]
+/// configured in [AppTheme] — no inline overrides.
 class AppNavBar extends StatelessWidget {
   /// Creates an [AppNavBar].
   const AppNavBar({
@@ -42,32 +43,24 @@ class AppNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      height: 80,
-      child: NavigationBar(
-        selectedIndex: selectedIndex,
-        height: 80,
-        indicatorColor: colorScheme.secondaryContainer,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-        onDestinationSelected: onDestinationSelected,
-        destinations: destinations
-            .map(
-              (AppNavDestination destination) => NavigationDestination(
-                icon: IconTheme(
-                  data: const IconThemeData(size: AppSpacing.lg),
-                  child: destination.icon,
-                ),
-                selectedIcon: IconTheme(
-                  data: const IconThemeData(size: AppSpacing.lg),
-                  child: destination.selectedIcon,
-                ),
-                label: destination.label,
+    return NavigationBar(
+      selectedIndex: selectedIndex,
+      onDestinationSelected: onDestinationSelected,
+      destinations: destinations
+          .map(
+            (AppNavDestination destination) => NavigationDestination(
+              icon: IconTheme(
+                data: const IconThemeData(size: 24),
+                child: destination.icon,
               ),
-            )
-            .toList(growable: false),
-      ),
+              selectedIcon: IconTheme(
+                data: const IconThemeData(size: 24),
+                child: destination.selectedIcon,
+              ),
+              label: destination.label,
+            ),
+          )
+          .toList(growable: false),
     );
   }
 }

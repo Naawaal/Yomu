@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:moon_design/moon_design.dart';
 
-import '../theme/context_extensions.dart';
+import '../theme/app_colors_extension.dart';
+import '../theme/tokens.dart';
 
 /// Semantic colour variants for [AppTag].
 enum AppTagVariant {
@@ -18,14 +18,14 @@ enum AppTagVariant {
   error,
 }
 
-/// App-standard tag / badge built on [MoonTag].
+/// App-standard pill tag built on [ColorScheme] and [AppColorsExtension].
 ///
-/// Background and text colours are resolved from the registered
-/// [MoonTheme] and [AppThemeExtension] — no hardcoded values.
+/// All colors derive from the theme — no hardcoded values.
 ///
 /// ```dart
 /// AppTag(label: 'Trusted', variant: AppTagVariant.success)
-/// AppTag(label: 'Untrusted', variant: AppTagVariant.error)
+/// AppTag(label: 'NSFW', variant: AppTagVariant.error)
+/// AppTag(label: 'EN', variant: AppTagVariant.neutral)
 /// ```
 class AppTag extends StatelessWidget {
   /// Creates an [AppTag].
@@ -47,35 +47,44 @@ class AppTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final MoonColors? colors = Theme.of(context).extension<MoonTheme>()?.tokens.colors;
-    final appTheme = context.appTheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final AppColorsExtension ext = Theme.of(
+      context,
+    ).extension<AppColorsExtension>()!;
+    final TextTheme textTheme = Theme.of(context).textTheme;
 
     final (Color bg, Color fg) = switch (variant) {
       AppTagVariant.neutral => (
-          colors?.gohan ?? Colors.grey.shade200,
-          colors?.bulma ?? Colors.black87,
-        ),
-      AppTagVariant.success => (
-          appTheme.successContainerColor,
-          appTheme.successColor,
-        ),
-      AppTagVariant.warning => (
-          appTheme.warningContainerColor,
-          appTheme.warningColor,
-        ),
-      AppTagVariant.error => (
-          colors?.chichi10 ?? Colors.red.shade100,
-          colors?.chichi ?? Colors.red,
-        ),
+        cs.surfaceContainerHighest,
+        cs.onSurfaceVariant,
+      ),
+      AppTagVariant.success => (ext.successContainer, ext.onSuccessContainer),
+      AppTagVariant.warning => (ext.warningContainer, ext.onWarningContainer),
+      AppTagVariant.error => (cs.errorContainer, cs.onErrorContainer),
     };
 
-    return MoonTag(
-      backgroundColor: bg,
-      label: Text(
-        label,
-        style: TextStyle(color: fg),
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.xs,
+        vertical: AppSpacing.xxs,
       ),
-      leading: leadingIcon,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(AppRadius.xs),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          if (leadingIcon != null) ...<Widget>[
+            IconTheme(
+              data: IconThemeData(color: fg, size: 12),
+              child: leadingIcon!,
+            ),
+            const SizedBox(width: AppSpacing.xxs),
+          ],
+          Text(label, style: textTheme.labelSmall?.copyWith(color: fg)),
+        ],
+      ),
     );
   }
 }

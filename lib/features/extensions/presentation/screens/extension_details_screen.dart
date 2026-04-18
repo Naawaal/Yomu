@@ -93,6 +93,7 @@ class ExtensionDetailsScreen extends ConsumerWidget {
               },
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
         ],
       ),
     );

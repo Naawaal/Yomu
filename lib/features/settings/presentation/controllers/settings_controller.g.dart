@@ -48,7 +48,7 @@ final backupDataSourceProvider = AutoDisposeProvider<BackupDataSource>.internal(
 // ignore: unused_element
 typedef BackupDataSourceRef = AutoDisposeProviderRef<BackupDataSource>;
 String _$repositoryManagementDataSourceHash() =>
-    r'12b387e20560c51d4c5423f93c608d897847ff1a';
+    r'3a605cc73024c4dc362324374bb3e37c6c78e3f8';
 
 /// Provides repository-management datasource implementation.
 ///
@@ -196,7 +196,7 @@ final appThemeModeProvider = AutoDisposeProvider<ThemeMode>.internal(
 // ignore: unused_element
 typedef AppThemeModeRef = AutoDisposeProviderRef<ThemeMode>;
 String _$settingsControllerHash() =>
-    r'583cfd39ef58e39f176ed69c073d43378ad5da01';
+    r'3d0908b95a871b1204e8c3930bc6f3b2ee14bda0';
 
 /// Async controller for settings state and mutation actions.
 ///

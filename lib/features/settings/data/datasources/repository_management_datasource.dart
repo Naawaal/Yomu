@@ -1,4 +1,5 @@
 import '../../domain/entities/repository_config.dart';
+import '../../../extensions/data/datasources/remote_extension_index_datasource.dart';
 import 'settings_local_datasource.dart';
 
 /// Contract for CRUD and validation of managed repositories.
@@ -25,9 +26,12 @@ class LocalRepositoryManagementDataSource
   /// Creates a repository-management datasource.
   const LocalRepositoryManagementDataSource({
     required SettingsLocalDataSource localDataSource,
-  }) : _localDataSource = localDataSource;
+    required RemoteExtensionIndexDataSource remoteIndexDataSource,
+  }) : _localDataSource = localDataSource,
+       _remoteIndexDataSource = remoteIndexDataSource;
 
   final SettingsLocalDataSource _localDataSource;
+  final RemoteExtensionIndexDataSource _remoteIndexDataSource;
 
   @override
   Future<List<RepositoryConfig>> addRepository(
@@ -101,20 +105,29 @@ class LocalRepositoryManagementDataSource
     }
 
     final RepositoryConfig repository = current[index];
-    final Uri? uri = Uri.tryParse(repository.baseUrl);
-    final bool isValidUri =
-        uri != null &&
-        uri.hasScheme &&
-        (uri.scheme == 'http' || uri.scheme == 'https');
+
+    // Attempt to fetch and parse the repository index.
+    RepositoryHealthStatus healthStatus = RepositoryHealthStatus.unhealthy;
+    try {
+      final Uri? uri = Uri.tryParse(repository.baseUrl);
+      if (uri != null &&
+          uri.hasScheme &&
+          (uri.scheme == 'http' || uri.scheme == 'https')) {
+        // Try to fetch and parse the index
+        await _remoteIndexDataSource.fetchRepositoryIndex(uri);
+        healthStatus = RepositoryHealthStatus.healthy;
+      }
+    } catch (_) {
+      // If fetch or parse fails, mark as unhealthy
+      healthStatus = RepositoryHealthStatus.unhealthy;
+    }
 
     final RepositoryConfig validated = RepositoryConfig(
       id: repository.id,
       displayName: repository.displayName,
       baseUrl: repository.baseUrl,
       isEnabled: repository.isEnabled,
-      healthStatus: isValidUri
-          ? RepositoryHealthStatus.healthy
-          : RepositoryHealthStatus.unhealthy,
+      healthStatus: healthStatus,
       lastValidatedAt: DateTime.now(),
     );
 

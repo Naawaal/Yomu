@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:moon_design/moon_design.dart';
 
 /// Size variants for [AppLoader].
 enum AppLoaderSize {
-  /// Small spinner (Moon `xs`).
+  /// Small spinner — 16 dp diameter.
   sm,
 
-  /// Medium spinner (Moon `sm`) — default.
+  /// Medium spinner — 24 dp diameter (default).
   md,
 
-  /// Large spinner (Moon `md`).
+  /// Large spinner — 36 dp diameter.
   lg,
 }
 
-/// App-standard circular loading indicator built on [MoonCircularLoader].
+/// App-standard inline loading indicator.
 ///
-/// Uses the primary colour from the registered [MoonTheme] — no
-/// hardcoded colours or sizes.
+/// Uses [colorScheme.primary] — no hardcoded colors or sizes.
+/// For full-screen loading, use [LoadingShimmer] instead.
 ///
 /// ```dart
 /// // Inline usage:
@@ -27,22 +26,26 @@ enum AppLoaderSize {
 /// ```
 class AppLoader extends StatelessWidget {
   /// Creates an [AppLoader].
-  const AppLoader({
-    super.key,
-    this.size = AppLoaderSize.md,
-  });
+  const AppLoader({super.key, this.size = AppLoaderSize.md});
 
   /// Controls the diameter of the spinner.
   final AppLoaderSize size;
 
-  MoonCircularLoaderSize get _moonSize => switch (size) {
-        AppLoaderSize.sm => MoonCircularLoaderSize.xs,
-        AppLoaderSize.md => MoonCircularLoaderSize.sm,
-        AppLoaderSize.lg => MoonCircularLoaderSize.md,
-      };
+  double get _dimension => switch (size) {
+    AppLoaderSize.sm => 16.0,
+    AppLoaderSize.md => 24.0,
+    AppLoaderSize.lg => 36.0,
+  };
 
   @override
   Widget build(BuildContext context) {
-    return MoonCircularLoader(circularLoaderSize: _moonSize);
+    return SizedBox(
+      width: _dimension,
+      height: _dimension,
+      child: CircularProgressIndicator(
+        strokeWidth: 2,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
   }
 }

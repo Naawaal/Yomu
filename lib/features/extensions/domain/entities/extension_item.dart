@@ -19,6 +19,7 @@ class ExtensionItem {
     required this.isNsfw,
     required this.trustStatus,
     this.installArtifact,
+    this.iconUrl,
   });
 
   /// Display name.
@@ -44,4 +45,7 @@ class ExtensionItem {
 
   /// Install artifact hint used by native install flow (content/file URI or file path).
   final String? installArtifact;
+
+  /// URL to extension icon image (optional, for display in UI).
+  final String? iconUrl;
 }

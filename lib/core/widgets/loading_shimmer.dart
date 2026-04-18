@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
 /// Reusable shimmer wrapper for loading skeletons.
+///
+/// Sweeps from [colorScheme.surfaceContainerHighest] (base) to
+/// [colorScheme.surface] (highlight) — dark→light direction.
+/// Pass a child widget tree whose shape matches the real content.
 class LoadingShimmer extends StatelessWidget {
   /// Creates a [LoadingShimmer].
   const LoadingShimmer({
@@ -13,7 +17,7 @@ class LoadingShimmer extends StatelessWidget {
   /// Skeleton widget tree to animate.
   final Widget child;
 
-  /// Animation period.
+  /// Animation period — defaults to 1 400 ms per design_system.json.
   final Duration period;
 
   @override
@@ -21,7 +25,7 @@ class LoadingShimmer extends StatelessWidget {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return Shimmer.fromColors(
       baseColor: colorScheme.surfaceContainerHighest,
-      highlightColor: colorScheme.surfaceContainer,
+      highlightColor: colorScheme.surface,
       period: period,
       child: child,
     );

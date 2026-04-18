@@ -5,6 +5,9 @@ import '../theme/tokens.dart';
 import 'app_button.dart';
 
 /// Standardized error-state surface with retry action.
+///
+/// Uses a calm visual treatment: only the retry button is primary.
+/// The icon receives a subtle [colorScheme.errorContainer] tint.
 class ErrorState extends StatelessWidget {
   /// Creates an [ErrorState].
   const ErrorState({
@@ -38,15 +41,25 @@ class ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(
-              Ionicons.close_circle_outline,
-              size: 64,
-              color: colorScheme.error,
+            Semantics(
+              label: '$title error state',
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer.withValues(alpha: 0.4),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Ionicons.close_circle_outline,
+                  size: AppSpacing.xxxl,
+                  color: colorScheme.error,
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               title,
-              style: textTheme.titleMedium,
+              style: textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -58,7 +71,7 @@ class ErrorState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.lg),
-            AppButton.outlined(label: retryLabel, onPressed: onRetry),
+            AppButton(label: retryLabel, onPressed: onRetry),
           ],
         ),
       ),

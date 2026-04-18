@@ -5,6 +5,8 @@ import '../theme/tokens.dart';
 import 'app_button.dart';
 
 /// Standardized empty-state surface.
+///
+/// Shows an icon, title, supporting description, and an optional action.
 class EmptyState extends StatelessWidget {
   /// Creates an [EmptyState].
   const EmptyState({
@@ -42,11 +44,18 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(icon, size: 64, color: colorScheme.onSurfaceVariant),
+            Semantics(
+              label: '$title empty state',
+              child: Icon(
+                icon,
+                size: AppSpacing.xxxl,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               title,
-              style: textTheme.titleMedium,
+              style: textTheme.titleLarge,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppSpacing.sm),

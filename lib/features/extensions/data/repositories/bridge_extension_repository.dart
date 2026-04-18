@@ -72,6 +72,7 @@ class BridgeExtensionRepository implements ExtensionRepository {
                   ? ExtensionTrustStatus.trusted
                   : ExtensionTrustStatus.untrusted,
               installArtifact: payload.installArtifact,
+              iconUrl: null,
             ),
           )
           .toList(growable: false);

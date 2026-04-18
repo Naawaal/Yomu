@@ -96,6 +96,9 @@ abstract final class AppStrings {
   /// Banner heading shown for NSFW sources.
   static const String nsfwContent = 'NSFW content';
 
+  /// Compact NSFW label used in tags.
+  static const String nsfw = 'NSFW';
+
   /// Banner body shown for NSFW sources.
   static const String nsfwBody =
       'This source may include mature content. Review before installing.';
@@ -112,6 +115,12 @@ abstract final class AppStrings {
   /// Empty state body.
   static const String noExtensionsBody =
       'Try syncing repositories or changing filters.';
+
+  /// Search hint for filtering the extensions list.
+  static const String extensionsSearchHint = 'Search extensions';
+
+  /// Filter label for showing all extension languages.
+  static const String extensionsAllLanguages = 'All languages';
 
   // ── Main shell ──────────────────────────────────────────────────────────────
 
@@ -156,71 +165,106 @@ abstract final class AppStrings {
   /// Feed error heading text.
   static const String feedLoadFailed = 'Unable to load feed';
 
-    /// Settings section title for theme controls.
-    static const String settingsSectionTheme = 'Theme';
+  /// Settings section title for theme controls.
+  static const String settingsSectionTheme = 'Theme';
 
-    /// Settings section title for backup controls.
-    static const String settingsSectionBackup = 'Backup';
+  /// Settings section title for backup controls.
+  static const String settingsSectionBackup = 'Backup';
 
-    /// Settings section title for repository management.
-    static const String settingsSectionRepositories = 'Repositories';
+  /// Settings section title for repository management.
+  static const String settingsSectionRepositories = 'Repositories';
 
-    /// Theme mode label for system setting.
-    static const String settingsThemeSystem = 'System';
+  /// Theme mode label for system setting.
+  static const String settingsThemeSystem = 'System';
 
-    /// Theme mode label for light setting.
-    static const String settingsThemeLight = 'Light';
+  /// Theme mode label for light setting.
+  static const String settingsThemeLight = 'Light';
 
-    /// Theme mode label for dark setting.
-    static const String settingsThemeDark = 'Dark';
+  /// Theme mode label for dark setting.
+  static const String settingsThemeDark = 'Dark';
 
-    /// Backup action label for export operation.
-    static const String settingsBackupExport = 'Export Backup';
+  /// Backup action label for export operation.
+  static const String settingsBackupExport = 'Export Backup';
 
-    /// Backup action label for import operation.
-    static const String settingsBackupImport = 'Import Backup';
+  /// Backup action label for import operation.
+  static const String settingsBackupImport = 'Import Backup';
 
-    /// Backup metadata label for last export.
-    static const String settingsBackupLastExport = 'Last export';
+  /// Backup metadata label for last export.
+  static const String settingsBackupLastExport = 'Last export';
 
-    /// Backup metadata label for last import.
-    static const String settingsBackupLastImport = 'Last import';
+  /// Backup metadata label for last import.
+  static const String settingsBackupLastImport = 'Last import';
 
-    /// Placeholder label for unavailable metadata values.
-    static const String settingsNotAvailable = 'Not available';
+  /// Placeholder label for unavailable metadata values.
+  static const String settingsNotAvailable = 'Not available';
 
-    /// Repository action label for creating entries.
-    static const String settingsRepositoryAdd = 'Add';
+  /// Repository action label for creating entries.
+  static const String settingsRepositoryAdd = 'Add';
 
-    /// Repository action tooltip for validation.
-    static const String settingsRepositoryValidate = 'Validate repository';
+  /// Repository action tooltip for validation.
+  static const String settingsRepositoryValidate = 'Validate repository';
 
-    /// Repository action tooltip for removal.
-    static const String settingsRepositoryRemove = 'Remove repository';
+  /// Repository action tooltip for removal.
+  static const String settingsRepositoryRemove = 'Remove repository';
 
-    /// Empty-state message for repository list.
-    static const String settingsRepositoriesEmpty =
-            'No repositories configured yet.';
+  /// Empty-state message for repository list.
+  static const String settingsRepositoriesEmpty =
+      'No repositories configured yet.';
 
-    /// Dialog title for adding a repository.
-    static const String settingsAddRepositoryTitle = 'Add repository';
+  /// Dialog title for adding a repository.
+  static const String settingsAddRepositoryTitle = 'Add repository';
 
-    /// Dialog field label for repository name.
-    static const String settingsRepositoryNameLabel = 'Repository name';
+  /// Dialog field label for repository name.
+  static const String settingsRepositoryNameLabel = 'Repository name';
 
-    /// Dialog field label for repository URL.
-    static const String settingsRepositoryUrlLabel = 'Repository URL';
+  /// Dialog field label for repository URL.
+  static const String settingsRepositoryUrlLabel = 'Repository URL';
 
-    /// Dialog action label for cancelling.
-    static const String settingsCancel = 'Cancel';
+  /// Dialog action label for cancelling.
+  static const String settingsCancel = 'Cancel';
 
-    /// Dialog action label for confirming add.
-    static const String settingsAdd = 'Add';
+  /// Dialog action label for confirming add.
+  static const String settingsAdd = 'Add';
 
-    /// Error message shown when repository input is invalid.
-    static const String settingsRepositoryInputInvalid =
-            'Please provide both a name and URL.';
+  /// Dialog title for confirming repository removal.
+  static const String settingsRemoveRepositoryTitle = 'Remove repository';
 
-    /// Generic operation success message.
-    static const String settingsOperationCompleted = 'Settings updated.';
+  /// Dialog body for confirming repository removal.
+  static const String settingsRemoveRepositoryBody =
+      'Are you sure you want to remove this repository?';
+
+  /// Dialog action label for confirming removal.
+  static const String settingsRemove = 'Remove';
+
+  /// Error message shown when repository input is invalid.
+  static const String settingsRepositoryInputInvalid =
+      'Please provide both a name and URL.';
+
+  /// Feedback shown when repository validation succeeds.
+  static const String settingsRepositoryValidationSuccess =
+      'Repository validated successfully.';
+
+  /// Feedback shown when repository URL has an unsupported format.
+  static const String settingsRepositoryValidationInvalidUrl =
+      'Repository URL is invalid. Use a valid http/https URL.';
+
+  /// Repository health status: successfully validated.
+  static const String settingsRepositoryHealthyLabel = 'Healthy';
+
+  /// Repository health status: validation failed.
+  static const String settingsRepositoryUnhealthyLabel = 'Unavailable';
+
+  /// Repository health status: not yet validated.
+  static const String settingsRepositoryUnknownLabel = 'Not validated';
+
+  /// Feedback shown when repository index cannot be reached.
+  static const String settingsRepositoryValidationUnreachable =
+      'Could not reach repository index. Check the URL and network.';
+
+  /// Feedback shown when repository index payload is malformed.
+  static const String settingsRepositoryValidationInvalidIndex =
+      'Repository index format is invalid.';
+
+  /// Generic operation success message.
+  static const String settingsOperationCompleted = 'Settings updated.';
 }

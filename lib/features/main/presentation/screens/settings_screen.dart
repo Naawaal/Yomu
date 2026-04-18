@@ -40,16 +40,24 @@ class SettingsScreen extends ConsumerWidget {
       }
 
       if (next.hasValue && !next.isLoading) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(AppStrings.settingsOperationCompleted)),
+        final String? feedbackMessage = ref.read(
+          settingsOperationFeedbackProvider,
         );
+        final String snackbarMessage =
+            feedbackMessage ?? AppStrings.settingsOperationCompleted;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(snackbarMessage)));
+        if (feedbackMessage != null) {
+          ref.read(settingsOperationFeedbackProvider.notifier).state = null;
+        }
       }
     });
 
     return Scaffold(
       body: CustomScrollView(
         slivers: <Widget>[
-          const SliverAppBar.large(title: Text(AppStrings.settings)),
+          const SliverAppBar.medium(title: Text(AppStrings.settings)),
           SliverPadding(
             padding: InsetsTokens.page,
             sliver: asyncSettings.when(
@@ -63,13 +71,13 @@ class SettingsScreen extends ConsumerWidget {
                             context,
                           ).colorScheme.surfaceContainerHighest,
                         ),
-                        const SizedBox(height: AppSpacing.sm),
+                        const SizedBox(height: AppSpacing.lg),
                         _SettingsLoadingCard(
                           color: Theme.of(
                             context,
                           ).colorScheme.surfaceContainerHighest,
                         ),
-                        const SizedBox(height: AppSpacing.sm),
+                        const SizedBox(height: AppSpacing.lg),
                         _SettingsLoadingCard(
                           color: Theme.of(
                             context,
@@ -93,6 +101,10 @@ class SettingsScreen extends ConsumerWidget {
               data: (SettingsSnapshot snapshot) {
                 return SliverList.list(
                   children: <Widget>[
+                    const _SettingsSectionHeader(
+                      title: AppStrings.settingsSectionTheme,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
                     ThemeSettingsSectionWidget(
                       selectedPreference: snapshot.themePreference,
                       onThemeChanged: (AppThemePreference preference) {
@@ -100,6 +112,10 @@ class SettingsScreen extends ConsumerWidget {
                             .read(settingsControllerProvider.notifier)
                             .setThemePreference(preference);
                       },
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    const _SettingsSectionHeader(
+                      title: AppStrings.settingsSectionBackup,
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     BackupSettingsSectionWidget(
@@ -115,6 +131,10 @@ class SettingsScreen extends ConsumerWidget {
                             .importBackup();
                       },
                     ),
+                    const SizedBox(height: AppSpacing.lg),
+                    const _SettingsSectionHeader(
+                      title: AppStrings.settingsSectionRepositories,
+                    ),
                     const SizedBox(height: AppSpacing.sm),
                     RepositorySettingsSectionWidget(
                       repositories: snapshot.repositories,
@@ -127,12 +147,14 @@ class SettingsScreen extends ConsumerWidget {
                             .validateRepository(repositoryId);
                       },
                       onRemoveRepository: (String repositoryId) {
-                        ref
-                            .read(settingsControllerProvider.notifier)
-                            .removeRepository(repositoryId);
+                        _confirmRemoveRepositoryDialog(
+                          context,
+                          ref,
+                          repositoryId,
+                        );
                       },
                     ),
-                    const SizedBox(height: AppSpacing.sm),
+                    const SizedBox(height: AppSpacing.lg),
                     const _SettingsSectionHeader(
                       title: AppStrings.settingsSectionContent,
                     ),
@@ -143,6 +165,7 @@ class SettingsScreen extends ConsumerWidget {
               },
             ),
           ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
         ],
       ),
     );
@@ -153,12 +176,48 @@ Future<void> _showAddRepositoryDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  String repositoryName = '';
+  String repositoryUrl = '';
+
   final (String?, String?) input =
-      await showDialog<(String?, String?)>(
+      await AppDialog.show<(String?, String?)>(
         context: context,
-        builder: (BuildContext context) {
-          return const _AddRepositoryDialog();
-        },
+        title: AppStrings.settingsAddRepositoryTitle,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            AppTextInput(
+              label: AppStrings.settingsRepositoryNameLabel,
+              onChanged: (String value) {
+                repositoryName = value;
+              },
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            AppTextInput(
+              label: AppStrings.settingsRepositoryUrlLabel,
+              keyboardType: TextInputType.url,
+              onChanged: (String value) {
+                repositoryUrl = value;
+              },
+            ),
+          ],
+        ),
+        actionsBuilder: (BuildContext dialogContext) => <Widget>[
+          AppButton.outlined(
+            label: AppStrings.settingsCancel,
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+            },
+          ),
+          AppButton(
+            label: AppStrings.settingsAdd,
+            onPressed: () {
+              Navigator.of(
+                dialogContext,
+              ).pop((repositoryName.trim(), repositoryUrl.trim()));
+            },
+          ),
+        ],
       ) ??
       (null, null);
 
@@ -190,73 +249,40 @@ Future<void> _showAddRepositoryDialog(
       );
 }
 
-/// Dialog widget for adding a new repository.
-class _AddRepositoryDialog extends StatefulWidget {
-  /// Creates the add repository dialog.
-  const _AddRepositoryDialog();
-
-  @override
-  State<_AddRepositoryDialog> createState() => _AddRepositoryDialogState();
-}
-
-class _AddRepositoryDialogState extends State<_AddRepositoryDialog> {
-  late final TextEditingController nameController;
-  late final TextEditingController urlController;
-
-  @override
-  void initState() {
-    super.initState();
-    nameController = TextEditingController();
-    urlController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    urlController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text(AppStrings.settingsAddRepositoryTitle),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          TextField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: AppStrings.settingsRepositoryNameLabel,
-            ),
+Future<void> _confirmRemoveRepositoryDialog(
+  BuildContext context,
+  WidgetRef ref,
+  String repositoryId,
+) async {
+  final bool confirmed =
+      await AppDialog.show<bool>(
+        context: context,
+        title: AppStrings.settingsRemoveRepositoryTitle,
+        content: const Text(AppStrings.settingsRemoveRepositoryBody),
+        actionsBuilder: (BuildContext dialogContext) => <Widget>[
+          AppButton.outlined(
+            label: AppStrings.settingsCancel,
+            onPressed: () {
+              Navigator.of(dialogContext).pop(false);
+            },
           ),
-          const SizedBox(height: AppSpacing.sm),
-          TextField(
-            controller: urlController,
-            decoration: const InputDecoration(
-              labelText: AppStrings.settingsRepositoryUrlLabel,
-            ),
+          AppButton.destructive(
+            label: AppStrings.settingsRemove,
+            onPressed: () {
+              Navigator.of(dialogContext).pop(true);
+            },
           ),
         ],
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-          child: const Text(AppStrings.settingsCancel),
-        ),
-        FilledButton(
-          onPressed: () {
-            Navigator.of(
-              context,
-            ).pop((nameController.text.trim(), urlController.text.trim()));
-          },
-          child: const Text(AppStrings.settingsAdd),
-        ),
-      ],
-    );
+      ) ??
+      false;
+
+  if (!confirmed || !context.mounted) {
+    return;
   }
+
+  await ref
+      .read(settingsControllerProvider.notifier)
+      .removeRepository(repositoryId);
 }
 
 class _SettingsSectionHeader extends StatelessWidget {
@@ -266,7 +292,13 @@ class _SettingsSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(title, style: Theme.of(context).textTheme.titleMedium);
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    return Text(
+      title,
+      style: Theme.of(
+        context,
+      ).textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
+    );
   }
 }
 
@@ -296,15 +328,15 @@ class _ExtensionsManagerTile extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return AppCard(
-      child: ListTile(
-        contentPadding: InsetsTokens.card,
+      child: AppListTile(
+        contentPadding: EdgeInsets.zero,
         leading: Icon(
           Ionicons.extension_puzzle_outline,
           color: colorScheme.primary,
         ),
         title: Text(
           AppStrings.extensionsTitle,
-          style: theme.textTheme.bodyLarge,
+          style: theme.textTheme.titleMedium,
         ),
         subtitle: Text(
           AppStrings.settingsExtensionsSubtitle,

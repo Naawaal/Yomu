@@ -116,10 +116,10 @@ class _FeedScaffold extends StatelessWidget {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: <Widget>[
-        const SliverAppBar.large(title: Text(AppStrings.home)),
-        SliverPadding(
-          padding: InsetsTokens.page,
-          sliver: SliverToBoxAdapter(
+        const SliverAppBar.medium(title: Text(AppStrings.home)),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _FeedFilterHeaderDelegate(
             child: FeedFilterBarWidget(
               filter: filter,
               onSortChanged: onSortChanged,
@@ -127,7 +127,11 @@ class _FeedScaffold extends StatelessWidget {
             ),
           ),
         ),
-        SliverPadding(padding: InsetsTokens.page, sliver: contentSliver),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          sliver: contentSliver,
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
       ],
     );
   }
@@ -143,43 +147,140 @@ class _FeedLoadingScrollView extends StatelessWidget {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: <Widget>[
-        const SliverAppBar.large(title: Text(AppStrings.home)),
+        const SliverAppBar.medium(title: Text(AppStrings.home)),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _FeedFilterHeaderDelegate(
+            child: FeedFilterBarWidget(
+              filter: FeedFilter.initial,
+              onSortChanged: (_) {},
+              onIncludeReadChanged: (_) {},
+            ),
+          ),
+        ),
         SliverPadding(
-          padding: InsetsTokens.page,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           sliver: SliverList.list(
             children: <Widget>[
               LoadingShimmer(
                 child: Column(
                   children: <Widget>[
-                    _LoadingCard(color: colorScheme.surfaceContainerHighest),
+                    _FeedItemSkeleton(
+                      color: colorScheme.surfaceContainerHighest,
+                    ),
                     const SizedBox(height: AppSpacing.sm),
-                    _LoadingCard(color: colorScheme.surfaceContainerHighest),
+                    _FeedItemSkeleton(
+                      color: colorScheme.surfaceContainerHighest,
+                    ),
                     const SizedBox(height: AppSpacing.sm),
-                    _LoadingCard(color: colorScheme.surfaceContainerHighest),
+                    _FeedItemSkeleton(
+                      color: colorScheme.surfaceContainerHighest,
+                    ),
                   ],
                 ),
               ),
             ],
           ),
         ),
+        const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
       ],
     );
   }
 }
 
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard({required this.color});
+class _FeedFilterHeaderDelegate extends SliverPersistentHeaderDelegate {
+  const _FeedFilterHeaderDelegate({required this.child});
+
+  final Widget child;
+
+  @override
+  double get minExtent => kFeedFilterBarHeight;
+
+  @override
+  double get maxExtent => kFeedFilterBarHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final Color backgroundColor = Theme.of(context).colorScheme.surface;
+
+    return ColoredBox(
+      color: backgroundColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _FeedFilterHeaderDelegate oldDelegate) {
+    return oldDelegate.child != child;
+  }
+}
+
+class _FeedItemSkeleton extends StatelessWidget {
+  const _FeedItemSkeleton({required this.color});
 
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+    return AppCard(
+      child: Row(
+        children: <Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: const SizedBox(width: 56, height: 80),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                _SkeletonLine(color: color, widthFactor: 0.9, height: 20),
+                const SizedBox(height: AppSpacing.xs),
+                _SkeletonLine(color: color, widthFactor: 0.65, height: 14),
+                const SizedBox(height: AppSpacing.xs),
+                _SkeletonLine(color: color, widthFactor: 0.45, height: 12),
+              ],
+            ),
+          ),
+        ],
       ),
-      child: const SizedBox(height: AppSpacing.xxxl),
+    );
+  }
+}
+
+class _SkeletonLine extends StatelessWidget {
+  const _SkeletonLine({
+    required this.color,
+    required this.widthFactor,
+    required this.height,
+  });
+
+  final Color color;
+  final double widthFactor;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      widthFactor: widthFactor,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(AppRadius.xs),
+        ),
+        child: SizedBox(height: height),
+      ),
     );
   }
 }

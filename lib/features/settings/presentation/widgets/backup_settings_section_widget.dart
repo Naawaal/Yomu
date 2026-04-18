@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/theme/tokens.dart';
+import '../../../../../core/widgets/widgets.dart';
 import '../../domain/entities/settings_snapshot.dart';
 
 /// Backup controls section for settings.
@@ -25,49 +27,31 @@ class BackupSettingsSectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: InsetsTokens.card,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              AppStrings.settingsSectionBackup,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: SpacingTokens.xs),
-            Text(
+    return AppCard(
+      child: Column(
+        children: <Widget>[
+          AppListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Ionicons.cloud_upload_outline),
+            title: const Text(AppStrings.settingsBackupExport),
+            subtitle: Text(
               '${AppStrings.settingsBackupLastExport}: ${_formatTimestamp(backup.lastExportedAt)}',
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: SpacingTokens.xs),
-            Text(
+            trailing: const Icon(Ionicons.chevron_forward_outline),
+            onTap: onExportBackup,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          AppListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Ionicons.cloud_download_outline),
+            title: const Text(AppStrings.settingsBackupImport),
+            subtitle: Text(
               '${AppStrings.settingsBackupLastImport}: ${_formatTimestamp(backup.lastImportedAt)}',
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(height: SpacingTokens.md),
-            Wrap(
-              spacing: SpacingTokens.sm,
-              runSpacing: SpacingTokens.sm,
-              children: <Widget>[
-                FilledButton.icon(
-                  onPressed: onExportBackup,
-                  icon: const Icon(Icons.upload_file_rounded),
-                  label: const Text(AppStrings.settingsBackupExport),
-                ),
-                OutlinedButton.icon(
-                  onPressed: onImportBackup,
-                  icon: const Icon(Icons.download_rounded),
-                  label: const Text(AppStrings.settingsBackupImport),
-                ),
-              ],
-            ),
-          ],
-        ),
+            trailing: const Icon(Ionicons.chevron_forward_outline),
+            onTap: onImportBackup,
+          ),
+        ],
       ),
     );
   }

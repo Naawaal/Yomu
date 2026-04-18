@@ -70,7 +70,23 @@ class _SyncFeedRepository implements FeedRepository {
 Widget _buildApp(FeedRepository repository) {
   return ProviderScope(
     overrides: <Override>[feedRepositoryProvider.overrideWithValue(repository)],
-    child: MaterialApp(theme: AppTheme.light(), home: const HomeScreen()),
+    child: MaterialApp(
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      home: const HomeScreen(),
+    ),
+  );
+}
+
+Widget _buildDarkApp(FeedRepository repository) {
+  return ProviderScope(
+    overrides: <Override>[feedRepositoryProvider.overrideWithValue(repository)],
+    child: MaterialApp(
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.dark,
+      home: const HomeScreen(),
+    ),
   );
 }
 
@@ -231,6 +247,29 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(AppStrings.home), findsWidgets);
+    });
+
+    testWidgets('renders home screen correctly in dark theme', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildDarkApp(const _SyncFeedRepository(items: <FeedItem>[])),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.home), findsWidgets);
+      expect(find.text(AppStrings.feedBrowseExtensions), findsOneWidget);
+    });
+
+    testWidgets('exposes refresh semantics for accessibility', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildApp(const _SyncFeedRepository(items: <FeedItem>[])),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(RefreshIndicator), findsOneWidget);
     });
   });
 }

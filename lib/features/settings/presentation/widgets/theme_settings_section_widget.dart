@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/theme/tokens.dart';
+import '../../../../../core/widgets/widgets.dart';
 import '../../domain/entities/settings_snapshot.dart';
 
 /// Theme configuration section for settings.
@@ -21,36 +23,33 @@ class ThemeSettingsSectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerHighest,
-      child: Padding(
-        padding: InsetsTokens.card,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text(
-              AppStrings.settingsSectionTheme,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: SpacingTokens.sm),
-            SegmentedButton<AppThemePreference>(
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          AppListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Ionicons.color_palette_outline),
+            title: const Text(AppStrings.settingsSectionTheme),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<AppThemePreference>(
               segments: const <ButtonSegment<AppThemePreference>>[
                 ButtonSegment<AppThemePreference>(
                   value: AppThemePreference.system,
-                  icon: Icon(Icons.brightness_auto_rounded),
+                  icon: Icon(Ionicons.phone_portrait_outline),
                   label: Text(AppStrings.settingsThemeSystem),
                 ),
                 ButtonSegment<AppThemePreference>(
                   value: AppThemePreference.light,
-                  icon: Icon(Icons.light_mode_rounded),
+                  icon: Icon(Ionicons.sunny_outline),
                   label: Text(AppStrings.settingsThemeLight),
                 ),
                 ButtonSegment<AppThemePreference>(
                   value: AppThemePreference.dark,
-                  icon: Icon(Icons.dark_mode_rounded),
+                  icon: Icon(Ionicons.moon_outline),
                   label: Text(AppStrings.settingsThemeDark),
                 ),
               ],
@@ -62,8 +61,8 @@ class ThemeSettingsSectionWidget extends StatelessWidget {
                 onThemeChanged(selected.first);
               },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -1,9 +1,18 @@
+import 'package:flutter/foundation.dart';
+
 import '../../domain/entities/extension_item.dart';
 import '../../domain/repositories/extension_repository.dart';
 
 /// Mock repository used while the Android bridge is not wired yet.
+///
+/// Singleton pattern ensures trust state persists across provider calls during development.
+/// When native bridge becomes available, it will override this mock.
 class MockExtensionRepository implements ExtensionRepository {
-  final List<ExtensionItem> _items = <ExtensionItem>[
+  /// Private constructor for singleton.
+  MockExtensionRepository._();
+
+  /// Shared state persisted across all access to the mock repository.
+  static final List<ExtensionItem> _items = <ExtensionItem>[
     const ExtensionItem(
       name: 'MangaDex',
       packageName: 'eu.kanade.tachiyomi.extension.en.mangadex',
@@ -13,6 +22,8 @@ class MockExtensionRepository implements ExtensionRepository {
       isNsfw: false,
       trustStatus: ExtensionTrustStatus.trusted,
       installArtifact: null,
+      iconUrl:
+          'https://cdn.jsdelivr.net/gh/tachiyomiorg/tachiyomi-extensions@master/src/en/mangadex/icon.png',
     ),
     const ExtensionItem(
       name: 'NekoScans',
@@ -23,8 +34,46 @@ class MockExtensionRepository implements ExtensionRepository {
       isNsfw: true,
       trustStatus: ExtensionTrustStatus.untrusted,
       installArtifact: null,
+      iconUrl: null,
     ),
   ];
+
+  /// Singleton instance accessed via [instance] getter.
+  static final MockExtensionRepository _instance = MockExtensionRepository._();
+
+  /// Returns the singleton instance.
+  static MockExtensionRepository get instance => _instance;
+
+  /// Resets items to initial state (for testing purposes only).
+  @visibleForTesting
+  static void resetForTesting() {
+    _items.clear();
+    _items.addAll(<ExtensionItem>[
+      const ExtensionItem(
+        name: 'MangaDex',
+        packageName: 'eu.kanade.tachiyomi.extension.en.mangadex',
+        language: 'en',
+        versionName: '1.4.9',
+        hasUpdate: true,
+        isNsfw: false,
+        trustStatus: ExtensionTrustStatus.trusted,
+        installArtifact: null,
+        iconUrl:
+            'https://cdn.jsdelivr.net/gh/tachiyomiorg/tachiyomi-extensions@master/src/en/mangadex/icon.png',
+      ),
+      const ExtensionItem(
+        name: 'NekoScans',
+        packageName: 'eu.kanade.tachiyomi.extension.all.nekoscans',
+        language: 'all',
+        versionName: '1.4.5',
+        hasUpdate: false,
+        isNsfw: true,
+        trustStatus: ExtensionTrustStatus.untrusted,
+        installArtifact: null,
+        iconUrl: null,
+      ),
+    ]);
+  }
 
   @override
   Future<List<ExtensionItem>> getAvailableExtensions() async {

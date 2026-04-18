@@ -3,10 +3,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/theme/app_theme_extension.dart';
 import '../../../../../core/theme/tokens.dart';
+import '../../../../../core/widgets/widgets.dart';
 import '../controllers/onboarding_controller.dart';
 
 const String _extensionsRoutePath = '/home';
@@ -103,21 +105,21 @@ class _OnboardingPagerState extends State<_OnboardingPager> {
       eyebrow: AppStrings.discover,
       title: AppStrings.onboardingDiscoverTitle,
       body: AppStrings.onboardingDiscoverBody,
-      icon: Icons.auto_stories_rounded,
+      icon: Ionicons.book_outline,
       heroTone: _OnboardingHeroTone.tertiary,
     ),
     _OnboardingPageData(
       eyebrow: AppStrings.extend,
       title: AppStrings.onboardingExtendTitle,
       body: AppStrings.onboardingExtendBody,
-      icon: Icons.extension_rounded,
+      icon: Ionicons.extension_puzzle_outline,
       heroTone: _OnboardingHeroTone.primary,
     ),
     _OnboardingPageData(
       eyebrow: AppStrings.readOffline,
       title: AppStrings.onboardingOfflineTitle,
       body: AppStrings.onboardingOfflineBody,
-      icon: Icons.download_for_offline_rounded,
+      icon: Ionicons.cloud_download_outline,
       heroTone: _OnboardingHeroTone.success,
     ),
   ];
@@ -375,7 +377,7 @@ class _HeroStoryStrip extends StatelessWidget {
         const SizedBox(width: SpacingTokens.sm),
         Expanded(
           child: _HeroStoryCard(
-            icon: Icons.menu_book_rounded,
+            icon: Ionicons.bookmarks_outline,
             rotation: 0.02,
             backgroundColor: primaryColor.withValues(alpha: 0.28),
             foregroundColor: onPrimaryColor,
@@ -384,7 +386,7 @@ class _HeroStoryStrip extends StatelessWidget {
         const SizedBox(width: SpacingTokens.sm),
         Expanded(
           child: _HeroStoryCard(
-            icon: Icons.favorite_border_rounded,
+            icon: Ionicons.heart_outline,
             rotation: 0.06,
             backgroundColor: primaryColor.withValues(alpha: 0.14),
             foregroundColor: onPrimaryColor,
@@ -592,23 +594,15 @@ class _LaunchLoadingScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: InsetsTokens.page,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const CircularProgressIndicator.adaptive(),
-                const SizedBox(height: SpacingTokens.md),
-                Text(
-                  AppStrings.preparingLibrary,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-          ),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Center(
+        child: Text(
+          AppStrings.appTitle,
+          style: theme.textTheme.headlineLarge,
+          textAlign: TextAlign.center,
         ),
       ),
     );
@@ -625,36 +619,11 @@ class _LaunchErrorScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: InsetsTokens.page,
-            child: Card(
-              child: Padding(
-                padding: InsetsTokens.card,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      AppStrings.unableToLoadApp,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: SpacingTokens.sm),
-                    Text(
-                      message,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: SpacingTokens.md),
-                    FilledButton.icon(
-                      onPressed: onRetry,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text(AppStrings.retry),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        child: ErrorState(
+          title: AppStrings.unableToLoadApp,
+          message: message,
+          retryLabel: AppStrings.retry,
+          onRetry: onRetry,
         ),
       ),
     );
