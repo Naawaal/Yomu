@@ -10,9 +10,14 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Looper
 import android.provider.Settings
 import java.io.File
 import java.io.FileNotFoundException
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
 
 /** Manages install-source permission checks for extension APK workflows. */
 class ExtensionInstallManager(
@@ -151,7 +156,9 @@ class ExtensionInstallManager(
   }
 
   private fun createStatusPendingIntent(sessionId: Int): PendingIntent {
-    val intent = Intent(sessionStatusAction(sessionId))
+    val intent = Intent(sessionStatusAction(sessionId)).apply {
+      setPackage(activity.packageName)
+    }
     val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
     return PendingIntent.getBroadcast(activity, sessionId, intent, flags)
   }
@@ -165,7 +172,59 @@ class ExtensionInstallManager(
     return when {
       trimmed.startsWith(CONTENT_URI_PREFIX) -> Uri.parse(trimmed)
       trimmed.startsWith(FILE_URI_PREFIX) -> Uri.parse(trimmed)
+      trimmed.startsWith(HTTP_URI_PREFIX, ignoreCase = true) ||
+        trimmed.startsWith(HTTPS_URI_PREFIX, ignoreCase = true) ->
+        downloadRemoteArtifactToCacheOffMainThread(trimmed)
       else -> Uri.fromFile(File(trimmed))
+    }
+  }
+
+  private fun downloadRemoteArtifactToCacheOffMainThread(artifactUrl: String): Uri {
+    if (Looper.myLooper() != Looper.getMainLooper()) {
+      return downloadRemoteArtifactToCache(artifactUrl)
+    }
+
+    val future = networkExecutor.submit<Uri> { downloadRemoteArtifactToCache(artifactUrl) }
+    return try {
+      future.get()
+    } catch (exception: ExecutionException) {
+      val cause = exception.cause
+      if (cause is Exception) {
+        throw cause
+      }
+      throw exception
+    }
+  }
+
+  private fun downloadRemoteArtifactToCache(artifactUrl: String): Uri {
+    val tempFile = File.createTempFile(REMOTE_APK_PREFIX, REMOTE_APK_SUFFIX, activity.cacheDir)
+    val connection = URL(artifactUrl).openConnection() as HttpURLConnection
+
+    try {
+      connection.instanceFollowRedirects = true
+      connection.connectTimeout = NETWORK_CONNECT_TIMEOUT_MS
+      connection.readTimeout = NETWORK_READ_TIMEOUT_MS
+      connection.connect()
+
+      if (connection.responseCode !in HTTP_OK_MIN..HTTP_OK_MAX) {
+        throw FileNotFoundException(
+          "Could not download install artifact (HTTP ${connection.responseCode}).",
+        )
+      }
+
+      connection.inputStream.use { source ->
+        tempFile.outputStream().use { target ->
+          source.copyTo(target)
+        }
+      }
+
+      return Uri.fromFile(tempFile)
+    } catch (exception: Exception) {
+      // Ensure no partial APK remains in cache if download fails.
+      runCatching { tempFile.delete() }
+      throw exception
+    } finally {
+      connection.disconnect()
     }
   }
 
@@ -175,6 +234,15 @@ class ExtensionInstallManager(
     const val INSTALL_ENTRY_BASE_APK = "base.apk"
     const val CONTENT_URI_PREFIX = "content://"
     const val FILE_URI_PREFIX = "file://"
+    const val HTTP_URI_PREFIX = "http://"
+    const val HTTPS_URI_PREFIX = "https://"
+    const val REMOTE_APK_PREFIX = "extension_install_"
+    const val REMOTE_APK_SUFFIX = ".apk"
+    const val NETWORK_CONNECT_TIMEOUT_MS = 15_000
+    const val NETWORK_READ_TIMEOUT_MS = 30_000
+    const val HTTP_OK_MIN = 200
+    const val HTTP_OK_MAX = 299
+    val networkExecutor = Executors.newSingleThreadExecutor()
   }
 
   private val activeReceivers = mutableMapOf<Int, BroadcastReceiver>()

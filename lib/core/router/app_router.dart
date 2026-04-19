@@ -45,7 +45,7 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
-        // Feed tab
+        // Extensions tab
         StatefulShellBranch(
           routes: <RouteBase>[
             GoRoute(
@@ -71,7 +71,7 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
-        // Library tab
+        // Settings tab
         StatefulShellBranch(
           routes: <RouteBase>[
             GoRoute(
@@ -173,10 +173,13 @@ abstract final class OnboardingRoute {
 
 /// Typed route helper for the Feed tab.
 abstract final class FeedRoute {
-  /// Route path for the feed tab.
+  /// Legacy route alias retained for backward compatibility.
+  ///
+  /// This location now redirects to [HomeRoute.path], where Feed and Library
+  /// are hosted as internal tabs.
   static const String path = '/feed';
 
-  /// Navigates to the feed tab.
+  /// Navigates to the legacy feed alias path.
   static void go(BuildContext context) {
     context.go(path);
   }

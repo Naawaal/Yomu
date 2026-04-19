@@ -39,6 +39,87 @@ repositoryValidationDataSourceProvider =
 final StateProvider<String?> settingsOperationFeedbackProvider =
     StateProvider<String?>((Ref ref) => null);
 
+/// Enum tracking which settings section is currently performing an operation.
+/// Used for section-scoped loading/error states (prevents full-page blocks).
+///
+/// Section-scoped state model (TODO-SET-002):
+/// - Each section can independently show loading/error during its operation
+/// - Full-page snapshot loading on initial load (separate from operations)
+/// - Operations include: theme change, backup export/import, repository add/remove/validate
+enum SettingsSectionOperation {
+  /// No section is performing an operation; all sections are idle/success.
+  none,
+
+  /// Theme section is processing a theme preference change.
+  themeChange,
+
+  /// Backup section is exporting settings backup.
+  backupExport,
+
+  /// Backup section is importing settings backup.
+  backupImport,
+
+  /// Repository section is adding a new repository.
+  repositoryAdd,
+
+  /// Repository section is removing an existing repository.
+  repositoryRemove,
+
+  /// Repository section is validating a repository URL/index.
+  repositoryValidate,
+}
+
+/// Tracks the active section operation and any error state.
+///
+/// Usage:
+/// - When a section operation starts: set operation type
+/// - On success: clear operation (set to none)
+/// - On error: keep operation type and store error object
+/// - Screen reads this to show per-section loading/error indicators
+@immutable
+class SectionOperationState {
+  /// Creates an operation state snapshot.
+  const SectionOperationState({required this.operation, this.error});
+
+  /// Currently executing operation (none = idle).
+  final SettingsSectionOperation operation;
+
+  /// Error object if operation failed; null if successful or loading.
+  final Object? error;
+
+  /// True if a section operation is actively executing.
+  bool get isLoading =>
+      operation != SettingsSectionOperation.none && error == null;
+
+  /// True if the most recent operation encountered an error.
+  bool get hasError => error != null;
+
+  /// Factory for idle state (no operation in progress).
+  factory SectionOperationState.idle() =>
+      const SectionOperationState(operation: SettingsSectionOperation.none);
+
+  /// Factory for error state.
+  factory SectionOperationState.error(
+    SettingsSectionOperation operation,
+    Object error,
+  ) => SectionOperationState(operation: operation, error: error);
+}
+
+/// Provides per-section operation state for presentation layer.
+///
+/// This enables section-scoped loading/error indicators instead of full-page blocks.
+/// Each operation (theme change, backup export, repository add, etc.) updates this state
+/// independently from the full-page SettingsSnapshot load state.
+///
+/// Architecture note:
+/// - Domain/data layers unchanged (still return full SettingsSnapshot)
+/// - Presentation layer tracks operation-level state separately
+/// - Allows atomic UI feedback per section without architectural refactor
+final StateProvider<SectionOperationState> sectionOperationStateProvider =
+    StateProvider<SectionOperationState>((Ref ref) {
+      return SectionOperationState.idle();
+    });
+
 /// Provides the local settings datasource implementation.
 @riverpod
 SettingsLocalDataSource settingsLocalDataSource(Ref ref) {
@@ -114,6 +195,43 @@ ThemeMode appThemeMode(Ref ref) {
 }
 
 /// Async controller for settings state and mutation actions.
+///
+/// ## State Architecture (Section-Scoped Behavior Model — TODO-SET-002)
+///
+/// ### Primary State: `settingsControllerProvider`
+/// - Type: `AsyncValue<SettingsSnapshot>`
+/// - Lifecycle: Loads once on app start; reloads on refresh() or after operations
+/// - Contains: Full settings state (theme, backup metadata, repositories)
+/// - Loading: Full-page shimmer during initial load
+/// - Error: Full-page error state with retry
+///
+/// ### Secondary State: `sectionOperationStateProvider`
+/// - Type: `SectionOperationState`
+/// - Lifecycle: Tracks active operation; cleared after success/error
+/// - Contains: Operation type (themeChange, backupExport, repositoryAdd, etc.) + error
+/// - Usage: Show per-section loading/error overlays without blocking other sections
+///
+/// ### Integration Pattern (Future TODOs)
+/// - When user performs operation → update `sectionOperationStateProvider` to loading
+/// - Controller method still reloads full snapshot (as now)
+/// - Screen watches BOTH providers:
+///   - Main state for data display
+///   - Section operation state for per-section loading/error indicators
+/// - After operation completes → section operation state auto-clears
+///
+/// ### Benefits
+/// - Theme section shows loading only during theme change (backup/repository unaffected)
+/// - Backup section shows loading during export/import (theme/repository unaffected)
+/// - Repository operations don't block other sections
+/// - Full snapshot is always current (no stale data issues)
+/// - No changes needed to domain/data layers
+///
+/// ### Current Implementation Status
+/// - ✅ State model defined (SettingsSectionOperation, SectionOperationState)
+/// - ✅ Provider created (sectionOperationStateProvider)
+/// - ⏳ Controller methods updated (in progress — TODO-SET-002)
+/// - ⏳ Screen integration (TODO-SET-011)
+/// - ⏳ Per-section shimmer loading (TODO-SET-002)
 @riverpod
 class SettingsController extends _$SettingsController {
   @override
@@ -133,33 +251,84 @@ class SettingsController extends _$SettingsController {
       updateThemeModeUseCaseProvider,
     );
 
+    // Mark theme section as loading
+    ref.read(sectionOperationStateProvider.notifier).state =
+        SectionOperationState(operation: SettingsSectionOperation.themeChange);
+
     state = const AsyncLoading<SettingsSnapshot>();
     state = await AsyncValue.guard(() async {
       await useCase(UpdateThemeModeParams(preference: preference));
       return _loadSnapshot();
     });
+
+    // Clear operation state on completion (success or error)
+    if (!state.hasError) {
+      ref.read(sectionOperationStateProvider.notifier).state =
+          SectionOperationState.idle();
+    } else {
+      ref
+          .read(sectionOperationStateProvider.notifier)
+          .state = SectionOperationState.error(
+        SettingsSectionOperation.themeChange,
+        state.error ?? Exception('Unknown error'),
+      );
+    }
   }
 
   /// Exports settings backup and updates state metadata.
   Future<void> exportBackup() async {
     final ExportBackupUseCase useCase = ref.read(exportBackupUseCaseProvider);
 
+    // Mark backup section as loading (export operation)
+    ref.read(sectionOperationStateProvider.notifier).state =
+        SectionOperationState(operation: SettingsSectionOperation.backupExport);
+
     state = const AsyncLoading<SettingsSnapshot>();
     state = await AsyncValue.guard(() async {
       await useCase();
       return _loadSnapshot();
     });
+
+    // Clear operation state on completion (success or error)
+    if (!state.hasError) {
+      ref.read(sectionOperationStateProvider.notifier).state =
+          SectionOperationState.idle();
+    } else {
+      ref
+          .read(sectionOperationStateProvider.notifier)
+          .state = SectionOperationState.error(
+        SettingsSectionOperation.backupExport,
+        state.error ?? Exception('Unknown error'),
+      );
+    }
   }
 
   /// Imports settings backup and updates state metadata.
   Future<void> importBackup() async {
     final ImportBackupUseCase useCase = ref.read(importBackupUseCaseProvider);
 
+    // Mark backup section as loading (import operation)
+    ref.read(sectionOperationStateProvider.notifier).state =
+        SectionOperationState(operation: SettingsSectionOperation.backupImport);
+
     state = const AsyncLoading<SettingsSnapshot>();
     state = await AsyncValue.guard(() async {
       await useCase();
       return _loadSnapshot();
     });
+
+    // Clear operation state on completion (success or error)
+    if (!state.hasError) {
+      ref.read(sectionOperationStateProvider.notifier).state =
+          SectionOperationState.idle();
+    } else {
+      ref
+          .read(sectionOperationStateProvider.notifier)
+          .state = SectionOperationState.error(
+        SettingsSectionOperation.backupImport,
+        state.error ?? Exception('Unknown error'),
+      );
+    }
   }
 
   /// Adds a repository entry and updates settings state.
@@ -168,11 +337,31 @@ class SettingsController extends _$SettingsController {
       manageRepositoryUseCaseProvider,
     );
 
+    // Mark repository section as loading (add operation)
+    ref
+        .read(sectionOperationStateProvider.notifier)
+        .state = SectionOperationState(
+      operation: SettingsSectionOperation.repositoryAdd,
+    );
+
     state = const AsyncLoading<SettingsSnapshot>();
     state = await AsyncValue.guard(() async {
       await useCase(AddRepositoryCommand(repository));
       return _loadSnapshot();
     });
+
+    // Clear operation state on completion (success or error)
+    if (!state.hasError) {
+      ref.read(sectionOperationStateProvider.notifier).state =
+          SectionOperationState.idle();
+    } else {
+      ref
+          .read(sectionOperationStateProvider.notifier)
+          .state = SectionOperationState.error(
+        SettingsSectionOperation.repositoryAdd,
+        state.error ?? Exception('Unknown error'),
+      );
+    }
   }
 
   /// Updates a repository entry and updates settings state.
@@ -194,11 +383,31 @@ class SettingsController extends _$SettingsController {
       manageRepositoryUseCaseProvider,
     );
 
+    // Mark repository section as loading (remove operation)
+    ref
+        .read(sectionOperationStateProvider.notifier)
+        .state = SectionOperationState(
+      operation: SettingsSectionOperation.repositoryRemove,
+    );
+
     state = const AsyncLoading<SettingsSnapshot>();
     state = await AsyncValue.guard(() async {
       await useCase(RemoveRepositoryCommand(repositoryId));
       return _loadSnapshot();
     });
+
+    // Clear operation state on completion (success or error)
+    if (!state.hasError) {
+      ref.read(sectionOperationStateProvider.notifier).state =
+          SectionOperationState.idle();
+    } else {
+      ref
+          .read(sectionOperationStateProvider.notifier)
+          .state = SectionOperationState.error(
+        SettingsSectionOperation.repositoryRemove,
+        state.error ?? Exception('Unknown error'),
+      );
+    }
   }
 
   /// Validates a repository entry and updates settings state.
@@ -209,6 +418,13 @@ class SettingsController extends _$SettingsController {
     final SettingsRepository repository = ref.read(settingsRepositoryProvider);
     final RemoteExtensionIndexDataSource validator = ref.read(
       repositoryValidationDataSourceProvider,
+    );
+
+    // Mark repository section as loading (validate operation)
+    ref
+        .read(sectionOperationStateProvider.notifier)
+        .state = SectionOperationState(
+      operation: SettingsSectionOperation.repositoryValidate,
     );
 
     state = const AsyncLoading<SettingsSnapshot>();
@@ -259,6 +475,19 @@ class SettingsController extends _$SettingsController {
           feedbackMessage;
       return _loadSnapshot();
     });
+
+    // Clear operation state on completion (success or error)
+    if (!state.hasError) {
+      ref.read(sectionOperationStateProvider.notifier).state =
+          SectionOperationState.idle();
+    } else {
+      ref
+          .read(sectionOperationStateProvider.notifier)
+          .state = SectionOperationState.error(
+        SettingsSectionOperation.repositoryValidate,
+        state.error ?? Exception('Unknown error'),
+      );
+    }
   }
 
   Future<SettingsSnapshot> _loadSnapshot() {

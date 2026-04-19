@@ -48,7 +48,11 @@ class ExtensionsHost(
         )
       )
     } catch (exception: Exception) {
-      result.error("GET_RUNTIME_INFO_FAILED", exception.message, null)
+      result.error(
+        "GET_RUNTIME_INFO_FAILED",
+        exception.toDetailedMessage("Failed to load extension host runtime info"),
+        null,
+      )
     }
   }
 
@@ -56,7 +60,11 @@ class ExtensionsHost(
     try {
       result.success(scanner.listAvailableExtensions())
     } catch (exception: Exception) {
-      result.error("LIST_EXTENSIONS_FAILED", exception.message, null)
+      result.error(
+        "LIST_EXTENSIONS_FAILED",
+        exception.toDetailedMessage("Failed to list available extensions"),
+        null,
+      )
     }
   }
 
@@ -87,7 +95,11 @@ class ExtensionsHost(
     } catch (_: PackageManager.NameNotFoundException) {
       result.error("PACKAGE_NOT_FOUND", "Extension package not found: $packageName", null)
     } catch (exception: Exception) {
-      result.error("TRUST_EXTENSION_FAILED", exception.message, null)
+      result.error(
+        "TRUST_EXTENSION_FAILED",
+        exception.toDetailedMessage("Failed to trust extension: $packageName"),
+        null,
+      )
     }
   }
 
@@ -99,11 +111,15 @@ class ExtensionsHost(
     val installArtifact = call.argument<String>(ARG_INSTALL_ARTIFACT)
 
     if (packageName.isNullOrBlank()) {
-      result.error("INVALID_ARGS", "packageName is required", null)
+      result.error("INVALID_ARGS", "packageName is required for installExtension", null)
       return
     }
     if (installArtifact.isNullOrBlank()) {
-      result.error("INVALID_ARGS", "installArtifact is required", null)
+      result.error(
+        "INVALID_ARGS",
+        "installArtifact is required for package: $packageName",
+        null,
+      )
       return
     }
 
@@ -145,7 +161,11 @@ class ExtensionsHost(
     } catch (exception: ExtensionInstallException) {
       result.error(exception.code, exception.message, null)
     } catch (exception: Exception) {
-      result.error("INSTALL_EXTENSION_FAILED", exception.message, null)
+      result.error(
+        "INSTALL_EXTENSION_FAILED",
+        exception.toDetailedMessage("Install failed for package: $packageName"),
+        null,
+      )
     }
   }
 
@@ -279,4 +299,13 @@ private fun Bundle.isRecognizedExtension(): Boolean {
 
 private fun Bundle.getTrimmedString(key: String): String? {
   return getString(key)?.trim()?.takeIf { value -> value.isNotEmpty() }
+}
+
+private fun Throwable.toDetailedMessage(context: String): String {
+  val trimmed = message?.trim()
+  if (!trimmed.isNullOrEmpty()) {
+    return "$context: $trimmed"
+  }
+
+  return "$context (${this::class.java.simpleName})"
 }

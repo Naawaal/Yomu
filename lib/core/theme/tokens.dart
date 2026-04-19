@@ -86,9 +86,9 @@ abstract final class ScreenBreakpoints {
 
 /// Common inset tokens.
 abstract final class InsetsTokens {
-  /// Default page insets.
+  /// Default page insets used by full-screen content surfaces.
   static const EdgeInsets page = EdgeInsets.all(AppSpacing.md);
 
-  /// Default card insets.
+  /// Default card insets used by surface containers and compact panels.
   static const EdgeInsets card = EdgeInsets.all(AppSpacing.md);
 }

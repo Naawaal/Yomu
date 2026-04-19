@@ -19,6 +19,18 @@ abstract final class AppTheme {
   /// [MoonColors.piccolo] so Material and Moon surfaces stay aligned.
   static const Color _seedColor = AppColors.seed;
 
+  /// Dark page backdrop used for the most immersive reading screens.
+  static const Color _darkBackground = Color(0xFF090B0E);
+
+  /// Dark card surface used for content cards and list items.
+  static const Color _darkCardSurface = Color(0xFF11151B);
+
+  /// Dark sheet surface used for sheets, nav containers, and sticky panels.
+  static const Color _darkSheetSurface = Color(0xFF181F29);
+
+  /// Dark chip surface used for tags, filters, and subtle status pills.
+  static const Color _darkChipSurface = Color(0xFF243040);
+
   /// Builds the light application [ThemeData] with [MoonTheme] registered.
   static ThemeData light() {
     final ColorScheme colorScheme = ColorScheme.fromSeed(
@@ -30,11 +42,17 @@ abstract final class AppTheme {
     );
     return ThemeData.light(useMaterial3: true).copyWith(
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: colorScheme.surfaceContainerLowest,
       textTheme: AppTextStyles.resolve(Brightness.light).apply(
         bodyColor: colorScheme.onSurface,
         displayColor: colorScheme.onSurface,
       ),
-      appBarTheme: const AppBarTheme(centerTitle: false),
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        backgroundColor: colorScheme.surfaceContainerLowest,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: colorScheme.surfaceContainerLow,
@@ -45,8 +63,17 @@ abstract final class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         indicatorColor: colorScheme.secondaryContainer,
-        backgroundColor: colorScheme.surface,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        backgroundColor: colorScheme.surfaceContainerLow,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+      ),
+      tabBarTheme: TabBarThemeData(
+        dividerColor: Colors.transparent,
+        labelColor: colorScheme.onSecondaryContainer,
+        unselectedLabelColor: colorScheme.onSurfaceVariant,
+        indicator: BoxDecoration(
+          color: colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -106,20 +133,34 @@ abstract final class AppTheme {
 
   /// Builds the dark application [ThemeData] with [MoonTheme] registered.
   static ThemeData dark() {
-    final ColorScheme colorScheme = ColorScheme.fromSeed(
-      seedColor: _seedColor,
-      brightness: Brightness.dark,
-    );
+    final ColorScheme colorScheme =
+        ColorScheme.fromSeed(
+          seedColor: _seedColor,
+          brightness: Brightness.dark,
+        ).copyWith(
+          surface: _darkCardSurface,
+          surfaceContainerLowest: _darkBackground,
+          surfaceContainerLow: _darkCardSurface,
+          surfaceContainer: _darkSheetSurface,
+          surfaceContainerHigh: const Color(0xFF1D2530),
+          surfaceContainerHighest: _darkChipSurface,
+        );
     final MoonTokens tokens = MoonTokens.dark.copyWith(
       colors: MoonColors.dark.copyWith(piccolo: _seedColor),
     );
     return ThemeData.dark(useMaterial3: true).copyWith(
       colorScheme: colorScheme,
+      scaffoldBackgroundColor: _darkBackground,
       textTheme: AppTextStyles.resolve(Brightness.dark).apply(
         bodyColor: colorScheme.onSurface,
         displayColor: colorScheme.onSurface,
       ),
-      appBarTheme: const AppBarTheme(centerTitle: false),
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        backgroundColor: _darkBackground,
+        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: colorScheme.surfaceContainerLow,
@@ -130,12 +171,21 @@ abstract final class AppTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         indicatorColor: colorScheme.secondaryContainer,
-        backgroundColor: colorScheme.surface,
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        backgroundColor: colorScheme.surfaceContainer,
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+      ),
+      tabBarTheme: TabBarThemeData(
+        dividerColor: Colors.transparent,
+        labelColor: colorScheme.onSecondaryContainer,
+        unselectedLabelColor: colorScheme.onSurfaceVariant,
+        indicator: BoxDecoration(
+          color: colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceContainerLowest,
+        fillColor: colorScheme.surfaceContainerLow,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: BorderSide(color: colorScheme.outline),

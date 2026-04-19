@@ -46,6 +46,7 @@ class CompositeExtensionRepository implements ExtensionRepository {
         isNsfw: remoteEntry.isNsfw || item.isNsfw,
         trustStatus: item.trustStatus,
         installArtifact: remoteEntry.installArtifact ?? item.installArtifact,
+        iconUrl: remoteEntry.iconUrl ?? item.iconUrl,
       );
     }
 

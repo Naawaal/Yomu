@@ -16,17 +16,20 @@ class _StubHostClient implements ExtensionsHostClient {
     this.extensions = const [],
     this.trustThrows,
     this.installThrows,
+    this.installState = HostInstallState.committed,
   });
 
   final Set<String> capabilities;
   final List<HostExtensionPayload> extensions;
   final Object? trustThrows;
   final Object? installThrows;
+  final HostInstallState installState;
 
   bool trustCalled = false;
   String? lastTrustedPackage;
   bool installCalled = false;
   String? lastInstalledPackage;
+  String? lastInstallArtifact;
 
   @override
   Future<ExtensionsHostRuntimeInfo> getRuntimeInfo() async =>
@@ -51,9 +54,12 @@ class _StubHostClient implements ExtensionsHostClient {
     if (installThrows != null) throw installThrows!;
     installCalled = true;
     lastInstalledPackage = packageName;
-    return const HostInstallResult(
-      state: HostInstallState.committed,
-      message: 'Install session committed.',
+    lastInstallArtifact = installArtifact;
+    return HostInstallResult(
+      state: installState,
+      message: installState == HostInstallState.committed
+          ? 'Install session committed.'
+          : 'Install requires user action.',
     );
   }
 }
@@ -88,6 +94,7 @@ class _SpyFallbackRepository implements ExtensionRepository {
   String? lastTrustedPackage;
   bool installCalled = false;
   String? lastInstalledPackage;
+  String? lastInstallArtifact;
 
   @override
   Future<List<ExtensionItem>> getAvailableExtensions() async {
@@ -105,6 +112,7 @@ class _SpyFallbackRepository implements ExtensionRepository {
   Future<void> install(String packageName, {String? installArtifact}) async {
     installCalled = true;
     lastInstalledPackage = packageName;
+    lastInstallArtifact = installArtifact;
   }
 }
 
@@ -277,17 +285,29 @@ void main() {
       expect(fallback.lastTrustedPackage, packageName);
     });
 
-    test('falls back on PlatformException from getRuntimeInfo', () async {
-      final client = _ThrowingRuntimeHostClient(
-        exception: PlatformException(code: 'ERR'),
-      );
-      final fallback = _SpyFallbackRepository();
-      final repo = _makeRepo(client: client, fallback: fallback);
+    test(
+      'throws typed trust exception on PlatformException from getRuntimeInfo',
+      () async {
+        final client = _ThrowingRuntimeHostClient(
+          exception: PlatformException(code: 'ERR'),
+        );
+        final fallback = _SpyFallbackRepository();
+        final repo = _makeRepo(client: client, fallback: fallback);
 
-      await repo.trust(packageName);
+        await expectLater(
+          repo.trust(packageName),
+          throwsA(
+            isA<ExtensionTrustException>().having(
+              (ExtensionTrustException error) => error.code,
+              'code',
+              'ERR',
+            ),
+          ),
+        );
 
-      expect(fallback.trustCalled, isTrue);
-    });
+        expect(fallback.trustCalled, isFalse);
+      },
+    );
 
     test(
       'throws typed trust exception on PlatformException from trustExtension',
@@ -329,16 +349,19 @@ void main() {
 
   group('BridgeExtensionRepository.install()', () {
     const packageName = 'eu.kanade.tachiyomi.extension.all.mangadex';
+    const resolvedArtifact =
+        'https://repo.example/apk/eu.kanade.tachiyomi.extension.all.mangadex-v2.apk';
 
     test('calls native installExtension when capability present', () async {
       final stub = _StubHostClient(capabilities: _kFullCapabilities);
       final fallback = _SpyFallbackRepository();
       final repo = _makeRepo(client: stub, fallback: fallback);
 
-      await repo.install(packageName);
+      await repo.install(packageName, installArtifact: resolvedArtifact);
 
       expect(stub.installCalled, isTrue);
       expect(stub.lastInstalledPackage, packageName);
+      expect(stub.lastInstallArtifact, resolvedArtifact);
       expect(fallback.installCalled, isFalse);
     });
 
@@ -349,11 +372,12 @@ void main() {
       final fallback = _SpyFallbackRepository();
       final repo = _makeRepo(client: stub, fallback: fallback);
 
-      await repo.install(packageName);
+      await repo.install(packageName, installArtifact: resolvedArtifact);
 
       expect(stub.installCalled, isFalse);
       expect(fallback.installCalled, isTrue);
       expect(fallback.lastInstalledPackage, packageName);
+      expect(fallback.lastInstallArtifact, resolvedArtifact);
     });
 
     test('uses native when capabilities empty (backward compat)', () async {
@@ -380,17 +404,29 @@ void main() {
       expect(fallback.lastInstalledPackage, packageName);
     });
 
-    test('falls back on PlatformException from getRuntimeInfo', () async {
-      final client = _ThrowingRuntimeHostClient(
-        exception: PlatformException(code: 'ERR'),
-      );
-      final fallback = _SpyFallbackRepository();
-      final repo = _makeRepo(client: client, fallback: fallback);
+    test(
+      'throws typed install exception on PlatformException from getRuntimeInfo',
+      () async {
+        final client = _ThrowingRuntimeHostClient(
+          exception: PlatformException(code: 'ERR'),
+        );
+        final fallback = _SpyFallbackRepository();
+        final repo = _makeRepo(client: client, fallback: fallback);
 
-      await repo.install(packageName);
+        await expectLater(
+          repo.install(packageName),
+          throwsA(
+            isA<ExtensionInstallException>().having(
+              (ExtensionInstallException error) => error.code,
+              'code',
+              'ERR',
+            ),
+          ),
+        );
 
-      expect(fallback.installCalled, isTrue);
-    });
+        expect(fallback.installCalled, isFalse);
+      },
+    );
 
     test(
       'throws typed install exception on PlatformException from installExtension',
@@ -416,5 +452,20 @@ void main() {
         expect(fallback.installCalled, isFalse);
       },
     );
+
+    test('treats requiresUserAction as pending (non-error)', () async {
+      final stub = _StubHostClient(
+        capabilities: _kFullCapabilities,
+        installState: HostInstallState.requiresUserAction,
+      );
+      final fallback = _SpyFallbackRepository();
+      final repo = _makeRepo(client: stub, fallback: fallback);
+
+      // Should not throw; returns successfully
+      await repo.install(packageName, installArtifact: resolvedArtifact);
+
+      expect(stub.installCalled, isTrue);
+      expect(fallback.installCalled, isFalse);
+    });
   });
 }

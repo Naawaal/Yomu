@@ -7,6 +7,28 @@ import '../../../../../core/widgets/widgets.dart';
 import '../../domain/entities/repository_config.dart';
 
 /// Repository-management section for settings.
+///
+/// ## Card Ownership (TODO-SET-001, TODO-SET-005)
+///
+/// This widget renders **content only** (no card, no title).
+/// The parent [SettingsScreen] wraps it in [_SettingsSectionCard] which provides:
+/// - Card styling (bordered, tonal surface, AppRadius.md)
+/// - Section title (AppStrings.settingsSectionRepositories)
+/// - Internal padding (AppSpacing.md)
+///
+/// This widget's responsibility:
+/// - Render repository list items (or empty state)
+/// - Display health status with icons/colors
+/// - Render action buttons (validate/remove per repository)
+/// - Render "Add Repository" action button
+///
+/// Accessibility (TODO-SET-006):
+/// - Semantic list container for screen readers
+/// - Each repository item includes status in semantic label
+/// - Action buttons have tooltips for keyboard/a11y users
+/// - Empty state announced with semantic label
+///
+/// Layout: Column of list items or empty state, followed by add button.
 class RepositorySettingsSectionWidget extends StatelessWidget {
   /// Creates a repository settings section widget.
   const RepositorySettingsSectionWidget({
@@ -33,15 +55,21 @@ class RepositorySettingsSectionWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
+    return Semantics(
+      container: true,
+      label: 'Repository list and management',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (repositories.isEmpty)
-            Text(
-              AppStrings.settingsRepositoriesEmpty,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+            Semantics(
+              label: 'No repositories configured',
+              enabled: true,
+              child: Text(
+                AppStrings.settingsRepositoriesEmpty,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             )
           else
@@ -50,20 +78,26 @@ class RepositorySettingsSectionWidget extends StatelessWidget {
             ) sync* {
               final int index = entry.$1;
               final RepositoryConfig repository = entry.$2;
+              final String statusLabel = _statusLabel(repository.healthStatus);
 
-              yield AppListTile(
-                key: ValueKey<String>(repository.id),
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  _statusIcon(repository.healthStatus),
-                  color: _statusColor(colorScheme, repository.healthStatus),
-                ),
-                title: Text(repository.displayName),
-                subtitle: Text(_statusLabel(repository.healthStatus)),
-                trailing: _RepositoryActions(
-                  repositoryId: repository.id,
-                  onValidateRepository: onValidateRepository,
-                  onRemoveRepository: onRemoveRepository,
+              yield Semantics(
+                label:
+                    '${repository.displayName}, ${statusLabel.toLowerCase()}',
+                enabled: true,
+                child: AppListTile(
+                  key: ValueKey<String>(repository.id),
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    _statusIcon(repository.healthStatus),
+                    color: _statusColor(colorScheme, repository.healthStatus),
+                  ),
+                  title: Text(repository.displayName),
+                  subtitle: Text(statusLabel),
+                  trailing: _RepositoryActions(
+                    repositoryId: repository.id,
+                    onValidateRepository: onValidateRepository,
+                    onRemoveRepository: onRemoveRepository,
+                  ),
                 ),
               );
 
@@ -72,11 +106,17 @@ class RepositorySettingsSectionWidget extends StatelessWidget {
               }
             }),
           const SizedBox(height: AppSpacing.md),
-          AppButton.outlined(
-            label: AppStrings.settingsRepositoryAdd,
-            leadingIcon: const Icon(Ionicons.add_outline),
-            onPressed: onAddRepository,
-            isFullWidth: true,
+          Semantics(
+            button: true,
+            enabled: true,
+            onTap: onAddRepository,
+            label: 'Add a new repository',
+            child: AppButton.outlined(
+              label: AppStrings.settingsRepositoryAdd,
+              leadingIcon: const Icon(Ionicons.add_outline),
+              onPressed: onAddRepository,
+              isFullWidth: true,
+            ),
           ),
         ],
       ),

@@ -142,6 +142,15 @@
     "xl": 24,
     "full": 999
   },
+  "insets": {
+    "page": {
+      "horizontal": 16,
+      "vertical": 16
+    },
+    "card": {
+      "all": 16
+    }
+  },
   "elevation": {
     "strategy": "Material 3 tonal elevation with surface tint",
     "surfaceTintRole": "colorScheme.primary"

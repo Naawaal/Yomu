@@ -28,36 +28,39 @@ class UpdateBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
-      child: Row(
-        children: <Widget>[
-          Icon(
-            Ionicons.download_outline,
-            color: colorScheme.onTertiaryContainer,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  AppStrings.updateAvailable,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  '${AppStrings.versionLabel}: $versionName',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
+    return AppCard.featured(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          children: <Widget>[
+            Icon(
+              Ionicons.download_outline,
+              color: colorScheme.onTertiaryContainer,
             ),
-          ),
-          AppButton(
-            onPressed: isLoading ? null : onUpdate,
-            label: AppStrings.update,
-            isLoading: isLoading,
-          ),
-        ],
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    AppStrings.updateAvailable,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: AppSpacing.xxs),
+                  Text(
+                    '${AppStrings.versionLabel}: $versionName',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            AppButton(
+              onPressed: isLoading ? null : onUpdate,
+              label: AppStrings.update,
+              isLoading: isLoading,
+            ),
+          ],
+        ),
       ),
     );
   }

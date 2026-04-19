@@ -38,14 +38,22 @@ class ExtensionActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isTrusted = item.trustStatus == ExtensionTrustStatus.trusted;
-    final bool shouldShowInstall = item.hasUpdate || showInstallWhenUpToDate;
+    final bool hasInstallArtifact = item.installArtifact?.isNotEmpty ?? false;
+    final bool shouldShowInstall =
+        item.hasUpdate || (showInstallWhenUpToDate && hasInstallArtifact);
 
     if (!isTrusted) {
-      final Widget button = AppButton.outlined(
-        onPressed: isLoading ? null : onTrust,
-        label: AppStrings.trustAndEnable,
-        isLoading: isLoading,
-      );
+      final Widget button = hasInstallArtifact
+          ? AppButton(
+              onPressed: isLoading ? null : onInstall,
+              label: AppStrings.install,
+              isLoading: isLoading,
+            )
+          : AppButton.outlined(
+              onPressed: isLoading ? null : onTrust,
+              label: AppStrings.trustAndEnable,
+              isLoading: isLoading,
+            );
       return fullWidth
           ? SizedBox(width: double.infinity, child: button)
           : button;
@@ -59,7 +67,7 @@ class ExtensionActionButtons extends StatelessWidget {
         ? AppStrings.update
         : AppStrings.install;
     final Widget button = AppButton(
-      onPressed: isLoading ? null : onInstall,
+      onPressed: isLoading || !hasInstallArtifact ? null : onInstall,
       label: label,
       isLoading: isLoading,
     );

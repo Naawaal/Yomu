@@ -14,55 +14,60 @@ class LibraryEntryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
+    final bool isLight = Theme.of(context).brightness == Brightness.light;
 
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              _CoverPlaceholder(title: entry.title),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      entry.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleMedium,
+    final Widget content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _CoverPlaceholder(title: entry.title),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    entry.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'Chapter ${entry.currentChapter} of ${entry.latestChapter}',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'Chapter ${entry.currentChapter} of ${entry.latestChapter}',
-                      style: textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    _StatusChip(status: entry.status),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  _StatusChip(status: entry.status),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            child: LinearProgressIndicator(value: entry.progress),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            '${(entry.progress * 100).round()}% complete • Last read ${_lastReadLabel(entry.lastReadAt)}',
-            style: textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
             ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          child: LinearProgressIndicator(
+            value: entry.progress,
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation<Color>(colorScheme.primary),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '${(entry.progress * 100).round()}% complete • Last read ${_lastReadLabel(entry.lastReadAt)}',
+          style: textTheme.labelSmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
+
+    return isLight ? AppCard.featured(child: content) : AppCard(child: content);
   }
 
   static String _lastReadLabel(DateTime value) {

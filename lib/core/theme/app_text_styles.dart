@@ -92,3 +92,19 @@ abstract final class AppTextStyles {
     );
   }
 }
+
+/// Manga-specific typography helpers used by discovery and reading surfaces.
+extension MangaTextTheme on TextTheme {
+  /// Chapter and title-style headings for manga cards and hero banners.
+  TextStyle? get mangaChapterTitle => headlineSmall;
+
+  /// Source names and package labels in dense discovery layouts.
+  TextStyle? get mangaSourceName => titleSmall?.copyWith(
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    height: 1.35,
+  );
+
+  /// Low-emphasis metadata labels for install status, language, and chips.
+  TextStyle? get mangaMetadataLabel => labelSmall;
+}

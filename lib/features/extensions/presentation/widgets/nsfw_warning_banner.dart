@@ -17,31 +17,34 @@ class NsfwWarningBanner extends StatelessWidget {
       context,
     ).extension<AppThemeExtension>()!;
 
-    return AppCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(Ionicons.warning_outline, color: appTheme.warningColor),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  AppStrings.nsfwContent,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: appTheme.warningColor,
+    return AppCard.featured(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Icon(Ionicons.warning_outline, color: appTheme.warningColor),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    AppStrings.nsfwContent,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: appTheme.warningColor,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  AppStrings.nsfwBody,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    AppStrings.nsfwBody,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

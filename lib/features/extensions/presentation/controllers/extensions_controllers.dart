@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../../core/constants/app_strings.dart';
 import '../../../../core/bridge/extensions_host_client.dart';
 import '../../../settings/presentation/controllers/settings_controller.dart';
 import '../../data/datasources/remote_extension_index_datasource.dart';
@@ -101,6 +102,10 @@ class ExtensionActionController extends _$ExtensionActionController {
 
   /// Installs the extension package.
   Future<void> install(String packageName, {String? installArtifact}) async {
+    if (installArtifact == null || installArtifact.trim().isEmpty) {
+      throw Exception(AppStrings.extensionsInstallArtifactMissing);
+    }
+
     final ExtensionRepository repository = ref.read(
       extensionRepositoryProvider,
     );

@@ -122,6 +122,23 @@ abstract final class AppStrings {
   /// Filter label for showing all extension languages.
   static const String extensionsAllLanguages = 'All languages';
 
+  /// Extensions section title for trusted recommendations.
+  static const String extensionsTrustedRecommendations =
+      'Trusted recommendations';
+
+  /// Extensions section title for recently updated items.
+  static const String extensionsRecentlyUpdated = 'Recently updated';
+
+  /// Extensions section title for sources ready to install.
+  static const String extensionsInstallReady = 'Ready to install';
+
+    /// Error shown when install is requested without an install artifact.
+    static const String extensionsInstallArtifactMissing =
+            'Install artifact missing. Refresh extensions and try again.';
+
+  /// Extensions section title for the remaining catalog.
+  static const String extensionsMoreSources = 'More sources';
+
   // ── Main shell ──────────────────────────────────────────────────────────────
 
   /// Bottom navigation label for the Home tab.
@@ -177,6 +194,15 @@ abstract final class AppStrings {
   /// Feed status chip text for read items.
   static const String feedStatusRead = 'Read';
 
+  /// Feed hero chip text for featured content.
+  static const String feedFeaturedNowLabel = 'Featured Now';
+
+  /// Feed section label for the continue-watching rail.
+  static const String feedContinueWatchingLabel = 'Continue Watching';
+
+  /// Feed section label for the latest-content rail.
+  static const String feedLatestFromSourcesLabel = 'Latest from Your Sources';
+
   /// Hero section label for spotlight feed item.
   static const String feedSpotlightLabel = 'Spotlight';
 
@@ -204,6 +230,49 @@ abstract final class AppStrings {
   /// Library tab placeholder body copy.
   static const String libraryPlaceholderBody =
       'Your saved titles and progress will appear here.';
+
+  /// Home feed error heading text.
+  static const String homeFeedLoadFailed = 'Unable to load home feed';
+
+  /// Home feed empty-state heading.
+  static const String homeFeedEmptyTitle = 'No updates yet';
+
+  /// Home feed empty-state body copy.
+  static const String homeFeedEmptyBody =
+      'Try refreshing or adjusting your feed preferences.';
+
+  /// Home library error heading text.
+  static const String homeLibraryLoadFailed = 'Unable to load library';
+
+  /// Home library empty-state heading.
+  static const String homeLibraryEmptyTitle = 'Your library is empty';
+
+  /// Home library empty-state body copy.
+  static const String homeLibraryEmptyBody =
+      'Start reading and your recent titles will appear here.';
+
+  /// Generic refresh action label used on Home tab states.
+  static const String homeRefresh = 'Refresh';
+
+  /// Continue-reading module label.
+  static const String homeContinueReadingLabel = 'Continue Reading';
+
+  /// Continue-reading subtitle fallback text.
+  static const String homeContinueReadingFallback =
+      'Pick up where you left off';
+
+  /// Continue-reading progress fallback text.
+  static const String homeProgressUnavailable = 'Progress unavailable';
+
+  /// Continue-reading action label.
+  static const String homeResume = 'Resume';
+
+  /// Progress shelf section heading.
+  static const String homeLibraryShelfTitle = 'Continue your library';
+
+  /// Progress shelf section subheading.
+  static const String homeLibraryShelfSubtitle =
+      'Progress-first picks to resume right away.';
 
   /// Settings section title for theme controls.
   static const String settingsSectionTheme = 'Theme';

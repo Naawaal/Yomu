@@ -119,10 +119,7 @@ class BridgeExtensionRepository implements ExtensionRepository {
         case HostInstallState.committed:
           return;
         case HostInstallState.requiresUserAction:
-          throw ExtensionInstallException(
-            code: 'INSTALL_REQUIRES_USER_ACTION',
-            message: installResult.message,
-          );
+          return; // Treat as pending, not error
       }
     } on MissingPluginException {
       await _fallbackRepository.install(
@@ -130,9 +127,12 @@ class BridgeExtensionRepository implements ExtensionRepository {
         installArtifact: installArtifact,
       );
     } on PlatformException catch (exception) {
+      final String? platformMessage = exception.message?.trim();
       throw ExtensionInstallException(
         code: exception.code,
-        message: exception.message ?? 'Install failed.',
+        message: platformMessage?.isNotEmpty == true
+            ? platformMessage!
+            : 'Install failed (${exception.code}).',
       );
     }
   }

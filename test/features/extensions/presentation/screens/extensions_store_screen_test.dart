@@ -88,7 +88,7 @@ void main() {
       await tester.pumpWidget(_buildTestApp(repository));
       await tester.pump();
 
-      expect(find.byType(LoadingShimmer), findsOneWidget);
+      expect(find.byType(LoadingShimmer), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows empty state when no extensions are available', (
@@ -194,7 +194,7 @@ void main() {
 
       expect(find.text('MangaDex'), findsNothing);
       expect(find.text('NekoScans'), findsOneWidget);
-      expect(find.byIcon(Ionicons.search_outline), findsOneWidget);
+      expect(find.byIcon(Ionicons.search_outline), findsAtLeastNWidgets(1));
     });
 
     testWidgets('renders extensions screen correctly in dark theme', (

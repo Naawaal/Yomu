@@ -138,10 +138,14 @@ class _DetailBody extends StatelessWidget {
     return SliverList.list(
       children: <Widget>[
         const SizedBox(height: AppSpacing.xs),
-        // -- Header card --
-        _HeaderCard(item: item, isTrusted: isTrusted),
+        _DetailHeroCard(
+          item: item,
+          isTrusted: isTrusted,
+          isLoading: isLoading,
+          onTrust: onTrust,
+          onInstall: onInstall,
+        ),
         const SizedBox(height: AppSpacing.md),
-        // -- Conditional banners --
         if (item.isNsfw) ...<Widget>[
           const NsfwWarningBanner(),
           const SizedBox(height: AppSpacing.md),
@@ -154,18 +158,7 @@ class _DetailBody extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
         ],
-        // -- Metadata card --
         _MetadataCard(item: item),
-        const SizedBox(height: AppSpacing.md),
-        // -- Primary action --
-        ExtensionActionButtons(
-          item: item,
-          isLoading: isLoading,
-          onTrust: onTrust,
-          onInstall: onInstall,
-          fullWidth: true,
-          showInstallWhenUpToDate: false,
-        ),
         const SizedBox(height: AppSpacing.xxl),
       ],
     );
@@ -173,58 +166,196 @@ class _DetailBody extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Header card
+// Hero card
 // ---------------------------------------------------------------------------
 
-class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({required this.item, required this.isTrusted});
+class _DetailHeroCard extends StatelessWidget {
+  const _DetailHeroCard({
+    required this.item,
+    required this.isTrusted,
+    required this.isLoading,
+    required this.onTrust,
+    required this.onInstall,
+  });
 
   final ExtensionItem item;
   final bool isTrusted;
+  final bool isLoading;
+  final VoidCallback onTrust;
+  final VoidCallback onInstall;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+
+    return AppCard.featured(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _ExtensionHeroArtwork(name: item.name, iconUrl: item.iconUrl),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(item.name, style: textTheme.headlineSmall),
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        item.packageName,
+                        style: textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Wrap(
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
+                        children: <Widget>[
+                          ExtensionTrustChip(trusted: isTrusted),
+                          _DetailMetaChip(
+                            label:
+                                '${AppStrings.languageLabel}: ${item.language.toUpperCase()}',
+                          ),
+                          _DetailMetaChip(
+                            label:
+                                '${AppStrings.versionLabel}: ${item.versionName}',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      isTrusted
+                          ? AppStrings.trusted
+                          : AppStrings.trustAndEnable,
+                      style: textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      '${AppStrings.versionLabel}: ${item.versionName}',
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    ExtensionActionButtons(
+                      item: item,
+                      isLoading: isLoading,
+                      onTrust: onTrust,
+                      onInstall: onInstall,
+                      fullWidth: true,
+                      showInstallWhenUpToDate: false,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailMetaChip extends StatelessWidget {
+  const _DetailMetaChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      ),
+      child: Text(
+        label,
+        style: textTheme.labelSmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _ExtensionHeroArtwork extends StatelessWidget {
+  const _ExtensionHeroArtwork({required this.name, required this.iconUrl});
+
+  final String name;
+  final String? iconUrl;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    return AppCard(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          CircleAvatar(
-            backgroundColor: colorScheme.tertiaryContainer,
-            child: Icon(
-              Ionicons.extension_puzzle_outline,
-              color: colorScheme.onTertiaryContainer,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(item.name, style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: AppSpacing.xs),
-                Wrap(
-                  spacing: AppSpacing.xs,
-                  children: <Widget>[
-                    Chip(
-                      label: Text(item.language.toUpperCase()),
-                      labelStyle: Theme.of(context).textTheme.labelSmall,
-                      padding: EdgeInsets.zero,
-                    ),
-                    Chip(
-                      label: Text(item.versionName),
-                      labelStyle: Theme.of(context).textTheme.labelSmall,
-                      padding: EdgeInsets.zero,
-                    ),
-                  ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: SizedBox(
+        width: 88,
+        height: 88,
+        child: iconUrl == null || iconUrl!.isEmpty
+            ? ColoredBox(
+                color: colorScheme.primaryContainer,
+                child: _HeroArtworkFallback(name: name),
+              )
+            : Image.network(
+                iconUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => ColoredBox(
+                  color: colorScheme.primaryContainer,
+                  child: _HeroArtworkFallback(name: name),
                 ),
-                const SizedBox(height: AppSpacing.xs),
-                ExtensionTrustChip(trusted: isTrusted),
-              ],
-            ),
-          ),
-        ],
+              ),
+      ),
+    );
+  }
+}
+
+class _HeroArtworkFallback extends StatelessWidget {
+  const _HeroArtworkFallback({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final TextTheme textTheme = Theme.of(context).textTheme;
+
+    return Center(
+      child: Text(
+        name.trim().isEmpty ? '?' : name.trim().substring(0, 1).toUpperCase(),
+        style: textTheme.titleLarge?.copyWith(
+          color: colorScheme.onPrimaryContainer,
+        ),
       ),
     );
   }
@@ -241,42 +372,60 @@ class _MetadataCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        children: <Widget>[
-          ListTile(
-            leading: const Icon(Ionicons.pricetag_outline),
-            title: const Text(AppStrings.packageLabel),
-            subtitle: SelectableText(
-              item.packageName,
-              style: Theme.of(context).textTheme.bodySmall,
+    return AppCard.featured(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              AppStrings.packageLabel,
+              style: Theme.of(context).textTheme.titleSmall,
             ),
-            trailing: IconButton(
-              icon: const Icon(Ionicons.copy_outline),
-              tooltip: 'Copy package name',
-              onPressed: () =>
-                  Clipboard.setData(ClipboardData(text: item.packageName)),
+            const SizedBox(height: AppSpacing.xs),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              leading: const Icon(Ionicons.pricetag_outline),
+              title: SelectableText(
+                item.packageName,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              trailing: IconButton(
+                icon: const Icon(Ionicons.copy_outline),
+                tooltip: 'Copy package name',
+                onPressed: () =>
+                    Clipboard.setData(ClipboardData(text: item.packageName)),
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Ionicons.language_outline),
-            title: const Text(AppStrings.languageLabel),
-            trailing: Text(
-              item.language.toUpperCase(),
-              style: Theme.of(context).textTheme.labelMedium,
+            const SizedBox(height: AppSpacing.xs),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            const SizedBox(height: AppSpacing.xs),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              leading: const Icon(Ionicons.language_outline),
+              title: const Text(AppStrings.languageLabel),
+              trailing: Text(
+                item.language.toUpperCase(),
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
             ),
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Ionicons.information_circle_outline),
-            title: const Text(AppStrings.versionLabel),
-            trailing: Text(
-              item.versionName,
-              style: Theme.of(context).textTheme.labelMedium,
+            const SizedBox(height: AppSpacing.xs),
+            Divider(color: Theme.of(context).colorScheme.outlineVariant),
+            const SizedBox(height: AppSpacing.xs),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              leading: const Icon(Ionicons.information_circle_outline),
+              title: const Text(AppStrings.versionLabel),
+              trailing: Text(
+                item.versionName,
+                style: Theme.of(context).textTheme.labelMedium,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
