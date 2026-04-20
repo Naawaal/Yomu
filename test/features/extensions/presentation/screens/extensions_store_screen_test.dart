@@ -60,6 +60,7 @@ void main() {
     packageName: 'eu.kanade.tachiyomi.extension.all.mangadex',
     language: 'all',
     versionName: '1.0.0',
+    isInstalled: true,
     hasUpdate: false,
     isNsfw: false,
     trustStatus: ExtensionTrustStatus.trusted,
@@ -70,6 +71,7 @@ void main() {
     packageName: 'eu.kanade.tachiyomi.extension.en.nekoscans',
     language: 'en',
     versionName: '2.0.0',
+    isInstalled: true,
     hasUpdate: false,
     isNsfw: false,
     trustStatus: ExtensionTrustStatus.trusted,
@@ -119,11 +121,22 @@ void main() {
       expect(find.text(AppStrings.retry), findsOneWidget);
     });
 
-    testWidgets('shows extension tile when data is available', (
+    testWidgets('shows modern compact More Sources metadata', (
       WidgetTester tester,
     ) async {
+      const ExtensionItem untrustedItem = ExtensionItem(
+        name: 'MangaDex',
+        packageName: 'eu.kanade.tachiyomi.extension.all.mangadex',
+        language: 'all',
+        versionName: '1.0.0',
+        isInstalled: false,
+        hasUpdate: false,
+        isNsfw: false,
+        trustStatus: ExtensionTrustStatus.untrusted,
+      );
+
       final repository = _FakeExtensionRepository(
-        loader: () async => const <ExtensionItem>[testItem],
+        loader: () async => const <ExtensionItem>[untrustedItem],
       );
 
       await tester.pumpWidget(_buildTestApp(repository));
@@ -135,10 +148,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('1.0.0'), findsOneWidget);
-      expect(find.text(AppStrings.trusted), findsOneWidget);
+      expect(find.text(AppStrings.untrusted), findsOneWidget);
     });
 
-    testWidgets('shows NSFW tag for mature extensions', (
+    testWidgets('shows NSFW metadata in compact More Sources rows', (
       WidgetTester tester,
     ) async {
       const ExtensionItem nsfwItem = ExtensionItem(
@@ -146,6 +159,7 @@ void main() {
         packageName: 'eu.kanade.tachiyomi.extension.en.nekoscans',
         language: 'en',
         versionName: '2.0.0',
+        isInstalled: false,
         hasUpdate: false,
         isNsfw: true,
         trustStatus: ExtensionTrustStatus.untrusted,
@@ -158,6 +172,7 @@ void main() {
       await tester.pumpWidget(_buildTestApp(repository));
       await tester.pumpAndSettle();
 
+      expect(find.text('NekoScans'), findsOneWidget);
       expect(find.text(AppStrings.nsfw), findsOneWidget);
       expect(find.text(AppStrings.untrusted), findsOneWidget);
     });
@@ -189,12 +204,60 @@ void main() {
       await tester.pumpWidget(_buildTestApp(repository));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('EN').first);
       await tester.tap(find.text('EN'));
       await tester.pumpAndSettle();
 
       expect(find.text('MangaDex'), findsNothing);
       expect(find.text('NekoScans'), findsOneWidget);
       expect(find.byIcon(Ionicons.search_outline), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets('filters visible extensions by quick filter chips', (
+      WidgetTester tester,
+    ) async {
+      const ExtensionItem updatedItem = ExtensionItem(
+        name: 'Updated Source',
+        packageName: 'eu.kanade.tachiyomi.extension.en.updated',
+        language: 'en',
+        versionName: '3.0.0',
+        isInstalled: false,
+        hasUpdate: true,
+        isNsfw: false,
+        trustStatus: ExtensionTrustStatus.trusted,
+      );
+      const ExtensionItem installedOnlyItem = ExtensionItem(
+        name: 'Installed Source',
+        packageName: 'eu.kanade.tachiyomi.extension.en.installed',
+        language: 'en',
+        versionName: '1.0.0',
+        isInstalled: true,
+        hasUpdate: false,
+        isNsfw: false,
+        trustStatus: ExtensionTrustStatus.trusted,
+      );
+
+      final repository = _FakeExtensionRepository(
+        loader: () async => const <ExtensionItem>[
+          updatedItem,
+          installedOnlyItem,
+        ],
+      );
+
+      await tester.pumpWidget(_buildTestApp(repository));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(AppStrings.extensionsRecentlyUpdated).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Updated Source'), findsOneWidget);
+      expect(find.text('Installed Source'), findsNothing);
+
+      await tester.tap(find.text(AppStrings.installed).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Installed Source'), findsOneWidget);
+      expect(find.text('Updated Source'), findsNothing);
     });
 
     testWidgets('renders extensions screen correctly in dark theme', (
@@ -222,6 +285,41 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(AppStrings.extensionsSearchHint), findsOneWidget);
+    });
+
+    testWidgets('renders explicit Installed Sources section', (
+      WidgetTester tester,
+    ) async {
+      const ExtensionItem installedItem = ExtensionItem(
+        name: 'MangaDex',
+        packageName: 'eu.kanade.tachiyomi.extension.all.mangadex',
+        language: 'all',
+        versionName: '1.0.0',
+        isInstalled: true,
+        hasUpdate: false,
+        isNsfw: false,
+        trustStatus: ExtensionTrustStatus.trusted,
+      );
+      const ExtensionItem untrustedItem = ExtensionItem(
+        name: 'NekoScans',
+        packageName: 'eu.kanade.tachiyomi.extension.en.nekoscans',
+        language: 'en',
+        versionName: '2.0.0',
+        isInstalled: false,
+        hasUpdate: false,
+        isNsfw: false,
+        trustStatus: ExtensionTrustStatus.untrusted,
+      );
+
+      final repository = _FakeExtensionRepository(
+        loader: () async => const <ExtensionItem>[installedItem, untrustedItem],
+      );
+
+      await tester.pumpWidget(_buildTestApp(repository));
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.extensionsInstalledSources), findsOneWidget);
+      expect(find.text('MangaDex'), findsOneWidget);
     });
   });
 }

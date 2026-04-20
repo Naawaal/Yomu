@@ -44,7 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: const <Widget>[
-            Tab(text: 'Feed'),
+            Tab(text: AppStrings.feed),
             Tab(text: AppStrings.library),
           ],
         ),

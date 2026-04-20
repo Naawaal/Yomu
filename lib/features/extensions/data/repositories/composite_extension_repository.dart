@@ -23,6 +23,9 @@ class CompositeExtensionRepository implements ExtensionRepository {
     try {
       remote = await _loadRemoteExtensions();
     } catch (_) {
+      if (installed.isEmpty) {
+        rethrow;
+      }
       remote = const <ExtensionItem>[];
     }
 
@@ -42,6 +45,7 @@ class CompositeExtensionRepository implements ExtensionRepository {
         packageName: item.packageName,
         language: remoteEntry.language,
         versionName: remoteEntry.versionName,
+        isInstalled: true,
         hasUpdate: item.hasUpdate,
         isNsfw: remoteEntry.isNsfw || item.isNsfw,
         trustStatus: item.trustStatus,

@@ -104,15 +104,8 @@ class _ExtensionArtwork extends StatelessWidget {
               if (loadingProgress == null) {
                 return child;
               }
-              // Show placeholder while loading
-              return Center(
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                            loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
-              );
+              // Keep icon rendering parity with other extension cards.
+              return _buildInitialsFallback(colorScheme, textTheme);
             },
       );
     }

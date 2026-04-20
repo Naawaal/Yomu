@@ -21,6 +21,7 @@ class MockFeedRemoteDataSource implements FeedRemoteDataSource {
     : _items = <FeedItemModel>[
         const FeedItemModel(
           id: 'feed-001',
+          sourceId: 'eu.kanade.tachiyomi.extension.all.mangadex',
           title: 'Kaiju No. 8',
           subtitle: 'Chapter 122 is now available',
           imageUrl: '',
@@ -29,6 +30,7 @@ class MockFeedRemoteDataSource implements FeedRemoteDataSource {
         ),
         const FeedItemModel(
           id: 'feed-002',
+          sourceId: 'eu.kanade.tachiyomi.extension.en.nekoscans',
           title: 'Blue Lock',
           subtitle: 'Chapter 307 released',
           imageUrl: '',
@@ -37,6 +39,7 @@ class MockFeedRemoteDataSource implements FeedRemoteDataSource {
         ),
         const FeedItemModel(
           id: 'feed-003',
+          sourceId: 'eu.kanade.tachiyomi.extension.en.mangalife',
           title: 'Frieren: Beyond Journey\'s End',
           subtitle: 'Volume update synced',
           imageUrl: '',
@@ -57,6 +60,7 @@ class MockFeedRemoteDataSource implements FeedRemoteDataSource {
     final FeedItemModel current = _items[index];
     _items[index] = FeedItemModel(
       id: current.id,
+      sourceId: current.sourceId,
       title: current.title,
       subtitle: current.subtitle,
       imageUrl: current.imageUrl,
@@ -103,6 +107,7 @@ class MockFeedRemoteDataSource implements FeedRemoteDataSource {
     final FeedItemModel current = _items[index];
     _items[index] = FeedItemModel(
       id: current.id,
+      sourceId: current.sourceId,
       title: current.title,
       subtitle: current.subtitle,
       imageUrl: current.imageUrl,

@@ -142,11 +142,25 @@ class RemoteExtensionIndexHttpDataSource
         final String rawBody = await _httpClient
             .get(indexUri)
             .timeout(requestTimeout);
-        final Object? decoded = jsonDecode(rawBody);
+
+        if (_looksLikeHtml(rawBody)) {
+          throw RemoteExtensionIndexInvalidFormatException(
+            _htmlResponseMessage(indexUri),
+          );
+        }
+
+        final Object? decoded;
+        try {
+          decoded = jsonDecode(rawBody);
+        } on FormatException {
+          throw RemoteExtensionIndexInvalidFormatException(
+            'Repository index is not valid JSON: $indexUri',
+          );
+        }
 
         final RemoteExtensionIndexModel index = _parseRepositoryIndex(
           decoded,
-          repositoryUri: repositoryUri,
+          repositoryUri: indexUri,
         );
         _cache[indexUri] = _RemoteIndexCacheEntry(index: index);
         return index;
@@ -168,10 +182,6 @@ class RemoteExtensionIndexHttpDataSource
         }
       } on RemoteExtensionIndexException {
         rethrow;
-      } on FormatException {
-        throw RemoteExtensionIndexInvalidFormatException(
-          'Repository index is not valid JSON: $indexUri',
-        );
       } catch (error) {
         lastError = error;
         if (attempt == attempts - 1) {
@@ -188,6 +198,24 @@ class RemoteExtensionIndexHttpDataSource
       'Failed to fetch repository index from $indexUri: $lastError',
     );
   }
+}
+
+bool _looksLikeHtml(String body) {
+  final String normalized = body.trimLeft().toLowerCase();
+  return normalized.startsWith('<!doctype html') ||
+      normalized.startsWith('<html') ||
+      normalized.startsWith('<head') ||
+      normalized.contains('<body');
+}
+
+String _htmlResponseMessage(Uri indexUri) {
+  if (indexUri.host.toLowerCase() == 'github.com') {
+    return 'Repository URL points to a GitHub HTML page instead of JSON: '
+        '$indexUri. Use a raw index URL such as '
+        'https://raw.githubusercontent.com/<owner>/<repo>/<branch>/index.min.json.';
+  }
+
+  return 'Repository returned HTML instead of JSON: $indexUri';
 }
 
 bool _isSupportedScheme(String scheme) {

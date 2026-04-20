@@ -19,6 +19,15 @@ class ExtensionInstallException implements Exception {
   String toString() => message;
 }
 
+/// Stable error codes produced by extension install operations.
+abstract final class ExtensionInstallErrorCode {
+  /// Native host accepted install request but user action is still required.
+  static const String requiresUserAction = 'REQUIRES_USER_ACTION';
+
+  /// Native host reports package already installed.
+  static const String packageAlreadyInstalled = 'PACKAGE_ALREADY_INSTALLED';
+}
+
 /// Trust failure surfaced from native host trust verification.
 class ExtensionTrustException implements Exception {
   /// Creates a typed trust exception.
@@ -66,13 +75,14 @@ class BridgeExtensionRepository implements ExtensionRepository {
               packageName: payload.packageName,
               language: payload.language,
               versionName: payload.versionName,
+              isInstalled: true,
               hasUpdate: payload.hasUpdate,
               isNsfw: payload.isNsfw,
               trustStatus: payload.isTrusted
                   ? ExtensionTrustStatus.trusted
                   : ExtensionTrustStatus.untrusted,
               installArtifact: payload.installArtifact,
-              iconUrl: null,
+              iconUrl: payload.iconUrl,
             ),
           )
           .toList(growable: false);
@@ -119,7 +129,10 @@ class BridgeExtensionRepository implements ExtensionRepository {
         case HostInstallState.committed:
           return;
         case HostInstallState.requiresUserAction:
-          return; // Treat as pending, not error
+          throw ExtensionInstallException(
+            code: ExtensionInstallErrorCode.requiresUserAction,
+            message: installResult.message,
+          );
       }
     } on MissingPluginException {
       await _fallbackRepository.install(
@@ -127,6 +140,10 @@ class BridgeExtensionRepository implements ExtensionRepository {
         installArtifact: installArtifact,
       );
     } on PlatformException catch (exception) {
+      if (exception.code == ExtensionInstallErrorCode.packageAlreadyInstalled) {
+        return;
+      }
+
       final String? platformMessage = exception.message?.trim();
       throw ExtensionInstallException(
         code: exception.code,

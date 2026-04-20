@@ -15,6 +15,7 @@ void main() {
                 'lang': 'all',
                 'version': '1.4.207',
                 'nsfw': 1,
+                'icon': 'https://example.com/icons/mangadex.png',
               },
             ],
             resolveInstallArtifact: (String apkFileName) =>
@@ -31,6 +32,7 @@ void main() {
         'https://example.com/apk/tachiyomi-all.mangadex-v1.4.207.apk',
       );
       expect(entry.isNsfw, isTrue);
+      expect(entry.iconUrl, 'https://example.com/icons/mangadex.png');
     });
 
     test('throws when required alias fields are missing', () {

@@ -5,9 +5,20 @@ import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.util.Base64
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import com.example.yomu.source.RuntimeExecutionRequest
+import com.example.yomu.source.RuntimeExecutionException
+import com.example.yomu.source.RuntimeOperation
+import com.example.yomu.source.SourceBridgePayloadMapper
+import com.example.yomu.source.SourceRuntimeExecutor
+import java.io.ByteArrayOutputStream
 
 /** Handles the Android side of the extensions MethodChannel bridge. */
 class ExtensionsHost(
@@ -27,6 +38,8 @@ class ExtensionsHost(
     signatureVerifier = signatureVerifier,
     trustStorage = trustStorage,
   )
+  private val runtimeExecutor = SourceRuntimeExecutor()
+  private val runtimePayloadMapper = SourceBridgePayloadMapper()
 
   /** Routes Flutter MethodChannel calls to the appropriate host handler. */
   fun handle(call: MethodCall, result: MethodChannel.Result) {
@@ -35,6 +48,9 @@ class ExtensionsHost(
       BridgeMethod.listAvailableExtensions -> handleListAvailableExtensions(result)
       BridgeMethod.trustExtension -> handleTrustExtension(call, result)
       BridgeMethod.installExtension -> handleInstallExtension(call, result)
+      BridgeMethod.executeLatest -> handleExecuteRuntime(call, result, RuntimeOperation.latest)
+      BridgeMethod.executePopular -> handleExecuteRuntime(call, result, RuntimeOperation.popular)
+      BridgeMethod.executeSearch -> handleExecuteRuntime(call, result, RuntimeOperation.search)
       else -> result.notImplemented()
     }
   }
@@ -169,9 +185,65 @@ class ExtensionsHost(
     }
   }
 
+  private fun handleExecuteRuntime(
+    call: MethodCall,
+    result: MethodChannel.Result,
+    operation: RuntimeOperation,
+  ) {
+    val sourceId = call.argument<String>(ARG_SOURCE_ID)
+    if (sourceId.isNullOrBlank()) {
+      result.error("INVALID_ARGS", "sourceId is required", null)
+      return
+    }
+
+    val page = call.argument<Int>(ARG_PAGE)?.takeIf { value -> value > 0 } ?: 1
+    val pageSize = call.argument<Int>(ARG_PAGE_SIZE)?.takeIf { value -> value > 0 } ?: 20
+    val query = call.argument<String>(ARG_QUERY)?.trim().orEmpty()
+
+    if (operation == RuntimeOperation.search && query.isBlank()) {
+      result.error("INVALID_ARGS", "query is required for executeSearch", null)
+      return
+    }
+
+    try {
+      val trustedExtension = scanner.findTrustedBySourceId(sourceId)
+      if (trustedExtension == null) {
+        result.error(
+          "SOURCE_NOT_TRUSTED",
+          "Source is not installed and trusted: $sourceId",
+          null,
+        )
+        return
+      }
+
+      val executionResult = runtimeExecutor.execute(
+        RuntimeExecutionRequest(
+          sourceId = sourceId,
+          operation = operation,
+          page = page,
+          pageSize = pageSize,
+          query = if (operation == RuntimeOperation.search) query else null,
+        )
+      )
+      result.success(runtimePayloadMapper.toRuntimePagePayload(executionResult))
+    } catch (exception: RuntimeExecutionException) {
+      result.error(exception.code, exception.message, null)
+    } catch (exception: Exception) {
+      result.error(
+        "EXECUTE_RUNTIME_FAILED",
+        exception.toDetailedMessage("Failed to execute ${operation.value} for source: $sourceId"),
+        null,
+      )
+    }
+  }
+
   private companion object {
     const val ARG_PACKAGE_NAME = "packageName"
     const val ARG_INSTALL_ARTIFACT = "installArtifact"
+    const val ARG_SOURCE_ID = "sourceId"
+    const val ARG_QUERY = "query"
+    const val ARG_PAGE = "page"
+    const val ARG_PAGE_SIZE = "pageSize"
     const val BRIDGE_SCHEMA_VERSION = 1
   }
 }
@@ -181,8 +253,18 @@ object ExtensionsHostCapabilities {
   const val list = "extensions.list"
   const val trust = "extensions.trust"
   const val install = "extensions.install"
+  const val executeLatest = "extensions.execute.latest"
+  const val executePopular = "extensions.execute.popular"
+  const val executeSearch = "extensions.execute.search"
 
-  val all: List<String> = listOf(list, trust, install)
+  val all: List<String> = listOf(
+    list,
+    trust,
+    install,
+    executeLatest,
+    executePopular,
+    executeSearch,
+  )
 }
 
 private object BridgeMethod {
@@ -190,6 +272,9 @@ private object BridgeMethod {
   const val listAvailableExtensions = "listAvailableExtensions"
   const val trustExtension = "trustExtension"
   const val installExtension = "installExtension"
+  const val executeLatest = "executeLatest"
+  const val executePopular = "executePopular"
+  const val executeSearch = "executeSearch"
 }
 
 /** Encapsulates the current package-scan based extension discovery logic. */
@@ -211,6 +296,14 @@ private class InstalledExtensionScanner(
       .toList()
   }
 
+  fun findTrustedBySourceId(sourceId: String): Map<String, Any?>? {
+    return listAvailableExtensions().firstOrNull { payload ->
+      val packageName = payload["packageName"] as? String
+      val trusted = payload["isTrusted"] as? Boolean ?: false
+      packageName == sourceId && trusted
+    }
+  }
+
   private fun queryTargetedExtensionPackages(): List<PackageInfo> {
     val targetedPackages = queryPackagesFromDiscoveryAction()
     if (targetedPackages.isNotEmpty()) {
@@ -223,8 +316,13 @@ private class InstalledExtensionScanner(
   }
 
   private fun queryPackagesFromDiscoveryAction(): List<PackageInfo> {
-    val queryIntent = Intent(ExtensionPackageContract.discoverAction)
-    val packageNames = resolveDiscoveryIntentPackages(queryIntent)
+    val packageNames = ExtensionPackageContract.discoverActions
+      .asSequence()
+      .flatMap { action ->
+        resolveDiscoveryIntentPackages(Intent(action)).asSequence()
+      }
+      .toSet()
+
     return packageNames
       .asSequence()
       .mapNotNull { packageName ->
@@ -258,18 +356,32 @@ private fun PackageInfo.toExtensionPayload(
   signatureVerifier: ExtensionSignatureVerifier,
   trustStorage: ExtensionTrustStorage,
 ): Map<String, Any?>? {
-  val metadata = applicationInfo?.metaData ?: return null
-  if (!metadata.isRecognizedExtension()) {
+  val metadata = applicationInfo?.metaData
+  val hasYomuContractMetadata = metadata?.isRecognizedExtension() == true
+  val isCompatibilityPackage = packageName.isKnownCompatibilityExtensionPackage()
+  if (!hasYomuContractMetadata && !isCompatibilityPackage) {
     return null
   }
 
   val applicationLabel = applicationInfo?.let { appInfo ->
     packageManager.getApplicationLabel(appInfo)
   } ?: "Unknown"
-  val displayName = metadata.getTrimmedString(ExtensionPackageContract.metadataDisplayName)
-    ?: applicationLabel.toString()
-  val language = metadata.getTrimmedString(ExtensionPackageContract.metadataLanguage)
-    ?: ExtensionPackageContract.defaultLanguage
+  val displayName = if (hasYomuContractMetadata) {
+    metadata?.getTrimmedString(ExtensionPackageContract.metadataDisplayName)
+      ?: applicationLabel.toString()
+  } else {
+    applicationLabel.toString()
+  }
+
+  val language = if (hasYomuContractMetadata) {
+    metadata?.getTrimmedString(ExtensionPackageContract.metadataLanguage)
+      ?: ExtensionPackageContract.defaultLanguage
+  } else {
+    packageName.inferCompatibilityLanguage()
+  }
+
+  val iconPayload = metadata?.getTrimmedString(ExtensionPackageContract.metadataIconUrl)
+    ?: packageManager.resolveInstalledIconDataUri(packageName)
 
   val isVerifiedSigner = signatureVerifier.verifyInstalledPackage(packageName).isTrusted
 
@@ -279,10 +391,75 @@ private fun PackageInfo.toExtensionPayload(
     "language" to language,
     "versionName" to versionName,
     "hasUpdate" to false,
-    "isNsfw" to metadata.getBoolean(ExtensionPackageContract.metadataNsfw, false),
-    "installArtifact" to metadata.getTrimmedString(ExtensionPackageContract.metadataInstallArtifact),
+    "isNsfw" to if (hasYomuContractMetadata) {
+      metadata?.getBoolean(ExtensionPackageContract.metadataNsfw, false) ?: false
+    } else {
+      false
+    },
+    "installArtifact" to if (hasYomuContractMetadata) {
+      metadata?.getTrimmedString(ExtensionPackageContract.metadataInstallArtifact)
+    } else {
+      null
+    },
+    "iconUrl" to iconPayload,
     "isTrusted" to (trustStorage.isTrusted(packageName) && isVerifiedSigner),
   )
+}
+
+private fun String.isKnownCompatibilityExtensionPackage(): Boolean {
+  return startsWith(ExtensionPackageContract.tachiyomiPackagePrefix) ||
+    startsWith(ExtensionPackageContract.mihonPackagePrefix)
+}
+
+private fun String.inferCompatibilityLanguage(): String {
+  val segments = split('.')
+  val extensionSegmentIndex = segments.indexOf("extension")
+  if (extensionSegmentIndex >= 0 && extensionSegmentIndex + 1 < segments.size) {
+    val candidate = segments[extensionSegmentIndex + 1].lowercase()
+    if (candidate == "all") {
+      return candidate
+    }
+    if (candidate.matches(Regex("^[a-z]{2,5}$"))) {
+      return candidate
+    }
+  }
+
+  return ExtensionPackageContract.defaultLanguage
+}
+
+private fun PackageManager.resolveInstalledIconDataUri(packageName: String): String? {
+  val drawable = runCatching { getApplicationIcon(packageName) }.getOrNull() ?: return null
+  return drawable.toPngDataUri()
+}
+
+private fun Drawable.toPngDataUri(): String? {
+  val bitmap = toBitmapOrNull() ?: return null
+  val bytes = ByteArrayOutputStream().use { stream ->
+    val didWrite = bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+    if (!didWrite) {
+      return null
+    }
+    stream.toByteArray()
+  }
+
+  return "data:image/png;base64,${Base64.encodeToString(bytes, Base64.NO_WRAP)}"
+}
+
+private fun Drawable.toBitmapOrNull(): Bitmap? {
+  if (this is BitmapDrawable) {
+    val drawableBitmap = bitmap
+    if (drawableBitmap != null) {
+      return drawableBitmap
+    }
+  }
+
+  val width = intrinsicWidth.takeIf { value -> value > 0 } ?: DEFAULT_ICON_SIZE_PX
+  val height = intrinsicHeight.takeIf { value -> value > 0 } ?: DEFAULT_ICON_SIZE_PX
+  val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+  val canvas = Canvas(bitmap)
+  setBounds(0, 0, canvas.width, canvas.height)
+  draw(canvas)
+  return bitmap
 }
 
 private fun Bundle.isRecognizedExtension(): Boolean {
@@ -309,3 +486,5 @@ private fun Throwable.toDetailedMessage(context: String): String {
 
   return "$context (${this::class.java.simpleName})"
 }
+
+private const val DEFAULT_ICON_SIZE_PX = 128

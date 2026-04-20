@@ -53,6 +53,14 @@
         <intent>
             <action android:name="com.example.yomu.extension.DISCOVER"/>
         </intent>
+
+        <!-- Legacy extension discovery actions for Tachiyomi/Mihon compatibility -->
+        <intent>
+            <action android:name="eu.kanade.tachiyomi.extension"/>
+        </intent>
+        <intent>
+            <action android:name="app.mihon.extension"/>
+        </intent>
         
         <!-- Query for unknown app source settings (extension installation) -->
         <intent>

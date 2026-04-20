@@ -13,6 +13,7 @@ import '../widgets/home_feed_load_more_indicator.dart';
 import '../widgets/home_feed_shimmer.dart';
 import '../widgets/home_library_progress_shelf.dart';
 import '../widgets/home_hero_section.dart';
+import '../widgets/installed_sources_shelf.dart';
 import '../../../library/domain/entities/library_entry.dart';
 import '../../../library/presentation/providers/library_provider.dart';
 import '../../../library/presentation/widgets/library_entry_card.dart';
@@ -236,17 +237,34 @@ class _HomeFeedTabViewState extends ConsumerState<_HomeFeedTabView> {
       ],
       data: (HomeFeedPage page) {
         if (page.items.isEmpty) {
+          final HomeFeedNotifier notifier = ref.read(
+            homeFeedNotifierProvider.notifier,
+          );
+          final bool hasInstalledSources =
+              notifier.installedSourceIds.isNotEmpty;
+          final String? actionLabel = hasInstalledSources
+              ? AppStrings.homeRefresh
+              : null;
+
           return <Widget>[
             SliverFillRemaining(
               hasScrollBody: false,
               child: EmptyState(
-                title: AppStrings.homeFeedEmptyTitle,
-                description: AppStrings.homeFeedEmptyBody,
-                actionLabel: AppStrings.homeRefresh,
-                onAction: () {
-                  ref.read(homeFeedNotifierProvider.notifier).refresh();
-                },
-                icon: Ionicons.sparkles_outline,
+                title: hasInstalledSources
+                    ? AppStrings.homeFeedEmptyTitle
+                    : AppStrings.feedEmptyTitle,
+                description: hasInstalledSources
+                    ? AppStrings.homeFeedEmptyBody
+                    : AppStrings.feedEmptyBody,
+                actionLabel: actionLabel,
+                onAction: hasInstalledSources
+                    ? () {
+                        ref.read(homeFeedNotifierProvider.notifier).refresh();
+                      }
+                    : null,
+                icon: hasInstalledSources
+                    ? Ionicons.sparkles_outline
+                    : Ionicons.extension_puzzle_outline,
               ),
             ),
           ];
@@ -274,6 +292,7 @@ class _HomeFeedTabViewState extends ConsumerState<_HomeFeedTabView> {
               ),
             ),
           ),
+          SliverToBoxAdapter(child: InstalledSourcesShelf()),
           SliverPadding(
             padding: InsetsTokens.page,
             sliver: SliverList.separated(

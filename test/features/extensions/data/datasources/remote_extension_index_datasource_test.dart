@@ -46,6 +46,7 @@ void main() {
       "language": "all",
       "versionName": "1.0.0",
       "installArtifact": "https://repo.example/mangadex.apk",
+      "iconUrl": "https://repo.example/mangadex.png",
       "isNsfw": false
     }
   ]
@@ -64,6 +65,37 @@ void main() {
       );
       expect(index.repositoryName, 'Community Repo');
       expect(index.extensions, hasLength(1));
+      expect(
+        index.extensions.first.iconUrl,
+        'https://repo.example/mangadex.png',
+      );
+    });
+
+    test('normalizes GitHub tree URL to raw compact index URL', () async {
+      final _FakeHttpClient client = _FakeHttpClient(
+        responseBody: '''
+[
+  {
+    "name": "Tachiyomi: MangaDex",
+    "pkg": "eu.kanade.tachiyomi.extension.all.mangadex",
+    "apk": "tachiyomi-all.mangadex-v1.4.207.apk",
+    "lang": "all",
+    "version": "1.4.207"
+  }
+]
+''',
+      );
+      final RemoteExtensionIndexHttpDataSource dataSource =
+          RemoteExtensionIndexHttpDataSource(httpClient: client);
+
+      await dataSource.fetchRepositoryIndex(
+        Uri.parse('https://github.com/yuzono/manga-repo/tree/main/repo'),
+      );
+
+      expect(
+        client.lastRequestedUri.toString(),
+        'https://raw.githubusercontent.com/yuzono/manga-repo/main/repo/index.min.json',
+      );
     });
 
     test('parses Tachiyomi array-root payloads into normalized entries', () async {
@@ -177,6 +209,31 @@ void main() {
             Uri.parse('https://repo.example'),
           ),
           throwsA(isA<RemoteExtensionIndexException>()),
+        );
+      },
+    );
+
+    test(
+      'throws clear error when repository responds with HTML page',
+      () async {
+        final _FakeHttpClient client = _FakeHttpClient(
+          responseBody: '<!DOCTYPE html><html><body>Not JSON</body></html>',
+        );
+        final RemoteExtensionIndexHttpDataSource dataSource =
+            RemoteExtensionIndexHttpDataSource(httpClient: client);
+
+        await expectLater(
+          () => dataSource.fetchRepositoryIndex(
+            Uri.parse('https://github.com/yuzono/manga-repo'),
+          ),
+          throwsA(
+            isA<RemoteExtensionIndexInvalidFormatException>().having(
+              (RemoteExtensionIndexInvalidFormatException error) =>
+                  error.message,
+              'message',
+              allOf(contains('GitHub HTML page'), contains('raw index URL')),
+            ),
+          ),
         );
       },
     );

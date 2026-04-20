@@ -49,12 +49,13 @@ class BackupSettingsSectionWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       container: true,
-      label: 'Backup actions: export and import',
+      label: AppStrings.settingsBackupSectionSemantics,
       child: Column(
         children: <Widget>[
           Semantics(
-            label:
-                'Export backup, last export: ${_formatTimestamp(backup.lastExportedAt)}',
+            label: AppStrings.settingsBackupExportSemantics(
+              _formatTimestamp(backup.lastExportedAt),
+            ),
             enabled: true,
             child: AppListTile(
               contentPadding: EdgeInsets.zero,
@@ -69,8 +70,9 @@ class BackupSettingsSectionWidget extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Semantics(
-            label:
-                'Import backup, last import: ${_formatTimestamp(backup.lastImportedAt)}',
+            label: AppStrings.settingsBackupImportSemantics(
+              _formatTimestamp(backup.lastImportedAt),
+            ),
             enabled: true,
             child: AppListTile(
               contentPadding: EdgeInsets.zero,

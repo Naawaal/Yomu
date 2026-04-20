@@ -4,6 +4,7 @@ import '../../domain/entities/feed_item.dart';
 class FeedItemModel extends FeedItem {
   const FeedItemModel({
     required super.id,
+    required super.sourceId,
     required super.title,
     required super.subtitle,
     required super.imageUrl,
@@ -14,6 +15,8 @@ class FeedItemModel extends FeedItem {
   factory FeedItemModel.fromJson(Map<String, dynamic> json) {
     return FeedItemModel(
       id: json['id'] as String,
+      sourceId:
+          (json['sourceId'] as String?) ?? (json['source_id'] as String?) ?? '',
       title: json['title'] as String,
       subtitle: json['subtitle'] as String,
       imageUrl: json['imageUrl'] as String,
@@ -24,6 +27,7 @@ class FeedItemModel extends FeedItem {
 
   Map<String, dynamic> toJson() => {
     'id': id,
+    'sourceId': sourceId,
     'title': title,
     'subtitle': subtitle,
     'imageUrl': imageUrl,

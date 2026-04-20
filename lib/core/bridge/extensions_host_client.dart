@@ -11,6 +11,15 @@ abstract final class ExtensionsHostCapabilities {
   /// Host supports extension install flow.
   static const String install = 'extensions.install';
 
+  /// Host supports runtime execution for latest updates.
+  static const String executeLatest = 'extensions.execute.latest';
+
+  /// Host supports runtime execution for popular listings.
+  static const String executePopular = 'extensions.execute.popular';
+
+  /// Host supports runtime execution for search listings.
+  static const String executeSearch = 'extensions.execute.search';
+
   /// Legacy capability used by older hosts.
   static const String legacyListAvailable = 'extensions.list.available';
 
@@ -58,6 +67,7 @@ class HostExtensionPayload {
     required this.isNsfw,
     required this.isTrusted,
     this.installArtifact,
+    this.iconUrl,
   });
 
   /// Extension display name.
@@ -84,6 +94,9 @@ class HostExtensionPayload {
   /// Optional install artifact hint for host install flow.
   final String? installArtifact;
 
+  /// Optional icon URI to render for this extension entry.
+  final String? iconUrl;
+
   /// Creates payload from map values.
   factory HostExtensionPayload.fromMap(Map<String, Object?> map) {
     return HostExtensionPayload(
@@ -101,6 +114,109 @@ class HostExtensionPayload {
         'apkUri',
         'downloadUrl',
       ]),
+      iconUrl: _readString(map, <String>[
+        'iconUrl',
+        'iconUri',
+        'iconURI',
+        'icon_url',
+        'icon',
+      ]),
+    );
+  }
+}
+
+/// Runtime execution operation supported by the host bridge.
+enum HostSourceRuntimeOperation { latest, popular, search }
+
+/// Lightweight manga payload returned by runtime source execution.
+class HostSourceMangaPayload {
+  /// Creates a source manga payload.
+  const HostSourceMangaPayload({
+    required this.id,
+    required this.sourceId,
+    required this.title,
+    this.subtitle,
+    this.thumbnailUrl,
+  });
+
+  /// Source-scoped stable manga identifier.
+  final String id;
+
+  /// Source identifier that produced this entry.
+  final String sourceId;
+
+  /// Human-readable title.
+  final String title;
+
+  /// Optional subtitle/secondary line.
+  final String? subtitle;
+
+  /// Optional thumbnail URL.
+  final String? thumbnailUrl;
+
+  /// Creates payload from map values.
+  factory HostSourceMangaPayload.fromMap(Map<String, Object?> map) {
+    return HostSourceMangaPayload(
+      id: _readString(map, <String>['id', 'mangaId']) ?? '',
+      sourceId: _readString(map, <String>['sourceId', 'source']) ?? '',
+      title: _readString(map, <String>['title', 'name']) ?? 'Unknown',
+      subtitle: _readString(map, <String>['subtitle', 'description']),
+      thumbnailUrl: _readString(map, <String>[
+        'thumbnailUrl',
+        'thumbUrl',
+        'imageUrl',
+      ]),
+    );
+  }
+}
+
+/// Paged source runtime result returned by execute operations.
+class HostSourceRuntimePageResult {
+  /// Creates a paged source runtime result.
+  const HostSourceRuntimePageResult({
+    required this.sourceId,
+    required this.items,
+    required this.hasMore,
+    this.nextPage,
+    this.nextPageToken,
+  });
+
+  /// Source identifier for this page.
+  final String sourceId;
+
+  /// Returned manga entries.
+  final List<HostSourceMangaPayload> items;
+
+  /// Whether more pages are available.
+  final bool hasMore;
+
+  /// Next page index for number-based pagination.
+  final int? nextPage;
+
+  /// Next page cursor for token-based pagination.
+  final String? nextPageToken;
+
+  /// Creates result from bridge map values.
+  factory HostSourceRuntimePageResult.fromMap(Map<String, Object?> map) {
+    final List<HostSourceMangaPayload> items = (map['items'] is List<Object?>)
+        ? (map['items'] as List<Object?>)
+              .whereType<Map<Object?, Object?>>()
+              .map(
+                (Map<Object?, Object?> row) => HostSourceMangaPayload.fromMap(
+                  row.map((Object? key, Object? value) {
+                    return MapEntry(key.toString(), value);
+                  }),
+                ),
+              )
+              .toList(growable: false)
+        : const <HostSourceMangaPayload>[];
+
+    return HostSourceRuntimePageResult(
+      sourceId: _readString(map, <String>['sourceId']) ?? '',
+      items: items,
+      hasMore: _readBool(map, <String>['hasMore']) ?? false,
+      nextPage: _readInt(map, <String>['nextPage']),
+      nextPageToken: _readString(map, <String>['nextPageToken']),
     );
   }
 }
@@ -121,6 +237,42 @@ abstract class ExtensionsHostClient {
     String packageName, {
     String? installArtifact,
   });
+
+  /// Executes latest-updates runtime query against a trusted source.
+  Future<HostSourceRuntimePageResult> executeLatest({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) {
+    return Future<HostSourceRuntimePageResult>.error(
+      UnsupportedError('executeLatest is not implemented by this host client.'),
+    );
+  }
+
+  /// Executes popular-list runtime query against a trusted source.
+  Future<HostSourceRuntimePageResult> executePopular({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) {
+    return Future<HostSourceRuntimePageResult>.error(
+      UnsupportedError(
+        'executePopular is not implemented by this host client.',
+      ),
+    );
+  }
+
+  /// Executes search runtime query against a trusted source.
+  Future<HostSourceRuntimePageResult> executeSearch({
+    required String sourceId,
+    required String query,
+    int page = 1,
+    int pageSize = 20,
+  }) {
+    return Future<HostSourceRuntimePageResult>.error(
+      UnsupportedError('executeSearch is not implemented by this host client.'),
+    );
+  }
 }
 
 /// Typed install state values returned by the native extension host.
@@ -232,6 +384,62 @@ class MethodChannelExtensionsHostClient implements ExtensionsHostClient {
     return HostInstallResult.fromMap(result);
   }
 
+  @override
+  Future<HostSourceRuntimePageResult> executeLatest({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final Map<String, Object?> result = await _invokeMapMethod(
+      _BridgeMethods.executeLatest,
+      <String, Object?>{
+        'sourceId': sourceId,
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+
+    return HostSourceRuntimePageResult.fromMap(result);
+  }
+
+  @override
+  Future<HostSourceRuntimePageResult> executePopular({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final Map<String, Object?> result = await _invokeMapMethod(
+      _BridgeMethods.executePopular,
+      <String, Object?>{
+        'sourceId': sourceId,
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+
+    return HostSourceRuntimePageResult.fromMap(result);
+  }
+
+  @override
+  Future<HostSourceRuntimePageResult> executeSearch({
+    required String sourceId,
+    required String query,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final Map<String, Object?> result = await _invokeMapMethod(
+      _BridgeMethods.executeSearch,
+      <String, Object?>{
+        'sourceId': sourceId,
+        'query': query,
+        'page': page,
+        'pageSize': pageSize,
+      },
+    );
+
+    return HostSourceRuntimePageResult.fromMap(result);
+  }
+
   Future<Map<String, Object?>> _invokeMapMethod(
     String method, [
     Map<String, Object?>? arguments,
@@ -268,6 +476,9 @@ abstract final class _BridgeMethods {
   static const String listAvailableExtensions = 'listAvailableExtensions';
   static const String trustExtension = 'trustExtension';
   static const String installExtension = 'installExtension';
+  static const String executeLatest = 'executeLatest';
+  static const String executePopular = 'executePopular';
+  static const String executeSearch = 'executeSearch';
 }
 
 String? _readString(Map<String, Object?> map, List<String> keys) {

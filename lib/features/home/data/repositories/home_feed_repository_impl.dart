@@ -22,8 +22,14 @@ class HomeFeedRepositoryImpl implements IHomeFeedRepository {
         _toQueryModel(query),
       );
       return Right(page);
+    } on FormatException catch (e) {
+      return Left(ParseFailure('Failed to parse feed data: ${e.message}'));
+    } on StateError catch (error) {
+      return Left(ServerFailure('Failed to fetch feed: ${error.message}'));
+    } on Exception catch (error) {
+      return Left(ServerFailure('Failed to fetch feed: $error'));
     } catch (error) {
-      return Left(ServerFailure(error.toString()));
+      return Left(ServerFailure('Failed to fetch feed: $error'));
     }
   }
 
@@ -36,8 +42,14 @@ class HomeFeedRepositoryImpl implements IHomeFeedRepository {
         _toQueryModel(query),
       );
       return Right(page);
+    } on FormatException catch (e) {
+      return Left(ParseFailure('Failed to parse feed data: ${e.message}'));
+    } on StateError catch (error) {
+      return Left(ServerFailure('Failed to refresh feed: ${error.message}'));
+    } on Exception catch (error) {
+      return Left(ServerFailure('Failed to refresh feed: $error'));
     } catch (error) {
-      return Left(ServerFailure(error.toString()));
+      return Left(ServerFailure('Failed to refresh feed: $error'));
     }
   }
 

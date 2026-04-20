@@ -67,6 +67,9 @@ enum SettingsSectionOperation {
 
   /// Repository section is validating a repository URL/index.
   repositoryValidate,
+
+  /// Repository section is updating an existing repository entry.
+  repositoryUpdate,
 }
 
 /// Tracks the active section operation and any error state.
@@ -370,11 +373,30 @@ class SettingsController extends _$SettingsController {
       manageRepositoryUseCaseProvider,
     );
 
+    // Mark repository section as loading (update operation)
+    ref
+        .read(sectionOperationStateProvider.notifier)
+        .state = SectionOperationState(
+      operation: SettingsSectionOperation.repositoryUpdate,
+    );
+
     state = const AsyncLoading<SettingsSnapshot>();
     state = await AsyncValue.guard(() async {
       await useCase(UpdateRepositoryCommand(repository));
       return _loadSnapshot();
     });
+
+    if (!state.hasError) {
+      ref.read(sectionOperationStateProvider.notifier).state =
+          SectionOperationState.idle();
+    } else {
+      ref
+          .read(sectionOperationStateProvider.notifier)
+          .state = SectionOperationState.error(
+        SettingsSectionOperation.repositoryUpdate,
+        state.error ?? Exception('Unknown error'),
+      );
+    }
   }
 
   /// Removes a repository entry and updates settings state.

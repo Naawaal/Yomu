@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yomu/core/constants/app_strings.dart';
@@ -9,9 +11,10 @@ import 'package:yomu/features/settings/domain/repositories/settings_repository.d
 import 'package:yomu/features/settings/presentation/controllers/settings_controller.dart';
 
 class _FakeSettingsRepository implements SettingsRepository {
-  _FakeSettingsRepository(this._repositories);
+  _FakeSettingsRepository(this._repositories, {this.updateCompleter});
 
   final List<RepositoryConfig> _repositories;
+  final Completer<void>? updateCompleter;
   AppThemePreference _themePreference = AppThemePreference.system;
 
   @override
@@ -69,6 +72,7 @@ class _FakeSettingsRepository implements SettingsRepository {
     if (index >= 0) {
       _repositories[index] = repository;
     }
+    await updateCompleter?.future;
     return List<RepositoryConfig>.unmodifiable(_repositories);
   }
 
@@ -282,6 +286,57 @@ void main() {
         container.read(settingsOperationFeedbackProvider),
         AppStrings.settingsRepositoryValidationInvalidUrl,
       );
+    });
+  });
+
+  group('SettingsController.updateRepository', () {
+    test('sets repository update state while updating', () async {
+      const RepositoryConfig updatedRepository = RepositoryConfig(
+        id: 'repo-1',
+        displayName: 'Primary Repo Updated',
+        baseUrl: 'https://repo.example',
+        isEnabled: true,
+        healthStatus: RepositoryHealthStatus.healthy,
+      );
+
+      final Completer<void> updateCompleter = Completer<void>();
+
+      final _FakeSettingsRepository fakeRepository = _FakeSettingsRepository(
+        <RepositoryConfig>[repository],
+        updateCompleter: updateCompleter,
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: <Override>[
+          settingsRepositoryProvider.overrideWithValue(fakeRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final Future<void> updateFuture = container
+          .read(settingsControllerProvider.notifier)
+          .updateRepository(updatedRepository);
+
+      expect(
+        container.read(sectionOperationStateProvider).operation,
+        SettingsSectionOperation.repositoryUpdate,
+      );
+      expect(container.read(sectionOperationStateProvider).isLoading, isTrue);
+
+      updateCompleter.complete();
+      await updateFuture;
+
+      final SettingsSnapshot snapshot = await container.read(
+        settingsControllerProvider.future,
+      );
+
+      expect(snapshot.repositories, hasLength(1));
+      expect(snapshot.repositories.first.displayName, 'Primary Repo Updated');
+      expect(
+        container.read(sectionOperationStateProvider).operation,
+        SettingsSectionOperation.none,
+      );
+      expect(container.read(sectionOperationStateProvider).hasError, isFalse);
     });
   });
 }

@@ -43,7 +43,7 @@ class ThemeSettingsSectionWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       container: true,
-      label: 'Theme preference selection',
+      label: AppStrings.settingsThemeSelectionSemantics,
       child: SizedBox(
         width: double.infinity,
         child: SegmentedButton<AppThemePreference>(

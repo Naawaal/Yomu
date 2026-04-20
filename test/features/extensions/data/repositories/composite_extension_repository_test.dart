@@ -59,6 +59,7 @@ void main() {
               packageName: 'eu.kanade.tachiyomi.extension.all.mangadex',
               language: 'all',
               versionName: '1.1.0',
+              isInstalled: true,
               hasUpdate: true,
               isNsfw: false,
               trustStatus: ExtensionTrustStatus.trusted,
@@ -72,6 +73,7 @@ void main() {
                 packageName: 'eu.kanade.tachiyomi.extension.all.mangadex',
                 language: 'all',
                 versionName: '2.0.0',
+                isInstalled: false,
                 hasUpdate: false,
                 isNsfw: false,
                 trustStatus: ExtensionTrustStatus.untrusted,
@@ -82,6 +84,7 @@ void main() {
                 packageName: 'eu.kanade.tachiyomi.extension.en.nekoscans',
                 language: 'en',
                 versionName: '1.0.0',
+                isInstalled: false,
                 hasUpdate: false,
                 isNsfw: true,
                 trustStatus: ExtensionTrustStatus.untrusted,
@@ -119,6 +122,7 @@ void main() {
               packageName: 'pkg.shared',
               language: 'en',
               versionName: '1.0.0',
+              isInstalled: true,
               hasUpdate: true,
               isNsfw: false,
               trustStatus: ExtensionTrustStatus.trusted,
@@ -134,6 +138,7 @@ void main() {
                 packageName: 'pkg.shared',
                 language: 'ja',
                 versionName: '2.0.0',
+                isInstalled: false,
                 hasUpdate: false,
                 isNsfw: true,
                 trustStatus: ExtensionTrustStatus.untrusted,
@@ -171,6 +176,7 @@ void main() {
             packageName: 'pkg.installed.only',
             language: 'en',
             versionName: '1.0.0',
+            isInstalled: true,
             hasUpdate: false,
             isNsfw: false,
             trustStatus: ExtensionTrustStatus.trusted,
@@ -192,6 +198,25 @@ void main() {
       expect(items, hasLength(1));
       expect(items.single.packageName, 'pkg.installed.only');
       expect(items.single.trustStatus, ExtensionTrustStatus.trusted);
+    });
+
+    test('rethrows remote failure when no installed entries exist', () async {
+      final _FakePrimaryRepository primary = _FakePrimaryRepository(
+        items: const <ExtensionItem>[],
+      );
+
+      final CompositeExtensionRepository repository =
+          CompositeExtensionRepository(
+            primaryRepository: primary,
+            loadRemoteExtensions: LoadRemoteExtensionsUseCase(
+              const _ThrowingRemoteCatalogRepository(),
+            ),
+          );
+
+      await expectLater(
+        repository.getAvailableExtensions(),
+        throwsA(isA<Exception>()),
+      );
     });
 
     test('delegates trust/install actions to primary repository', () async {

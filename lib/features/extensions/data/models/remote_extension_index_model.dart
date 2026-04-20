@@ -20,27 +20,85 @@ abstract final class RemoteExtensionIndexFetchRules {
   /// Conventional filename expected at repository roots.
   static const String defaultIndexFileName = 'index.json';
 
+  /// Common Tachiyomi/Mihon compact index file name.
+  static const String compactIndexFileName = 'index.min.json';
+
+  static const String _githubHost = 'github.com';
+  static const String _githubRawHost = 'raw.githubusercontent.com';
+
   /// Resolves the concrete index URI from a configured repository base URI.
   ///
   /// Rules:
   /// - if the configured URI already points to a `.json` document, use it
   /// - otherwise append `index.json` to the configured path
   static Uri resolveIndexUri(Uri repositoryUri) {
-    final String lastSegment = repositoryUri.pathSegments.isEmpty
+    final Uri normalizedRepositoryUri = _normalizeRepositoryUri(repositoryUri);
+
+    final String lastSegment = normalizedRepositoryUri.pathSegments.isEmpty
         ? ''
-        : repositoryUri.pathSegments.last;
+        : normalizedRepositoryUri.pathSegments.last;
     if (lastSegment.toLowerCase().endsWith('.json')) {
-      return repositoryUri;
+      return normalizedRepositoryUri;
     }
 
     final List<String> segments = <String>[
-      ...repositoryUri.pathSegments.where(
+      ...normalizedRepositoryUri.pathSegments.where(
         (String segment) => segment.isNotEmpty,
       ),
-      defaultIndexFileName,
+      _preferredIndexFileName(normalizedRepositoryUri),
     ];
 
-    return repositoryUri.replace(pathSegments: segments);
+    return normalizedRepositoryUri.replace(
+      pathSegments: segments,
+      queryParameters: null,
+      fragment: null,
+    );
+  }
+
+  static String _preferredIndexFileName(Uri repositoryUri) {
+    final String host = repositoryUri.host.toLowerCase();
+    if (host == _githubHost || host == _githubRawHost) {
+      return compactIndexFileName;
+    }
+
+    return defaultIndexFileName;
+  }
+
+  static Uri _normalizeRepositoryUri(Uri repositoryUri) {
+    final String host = repositoryUri.host.toLowerCase();
+    if (host != _githubHost) {
+      return repositoryUri;
+    }
+
+    final List<String> segments = repositoryUri.pathSegments
+        .where((String segment) => segment.isNotEmpty)
+        .toList(growable: false);
+    if (segments.length < 2) {
+      return repositoryUri;
+    }
+
+    final String owner = segments[0];
+    final String repo = segments[1];
+    final bool hasStructuredPath = segments.length >= 4;
+    if (!hasStructuredPath) {
+      return repositoryUri;
+    }
+
+    final String section = segments[2].toLowerCase();
+    if (section != 'blob' && section != 'tree') {
+      return repositoryUri;
+    }
+
+    final List<String> remaining = segments.sublist(3);
+    if (remaining.isEmpty) {
+      return repositoryUri;
+    }
+
+    return Uri(
+      scheme: 'https',
+      host: _githubRawHost,
+      pathSegments: <String>[owner, repo, ...remaining],
+    );
   }
 
   /// Resolves a Tachiyomi APK filename or relative path into an install artifact.
@@ -146,6 +204,7 @@ class RemoteExtensionEntryModel {
     required this.versionName,
     required this.installArtifact,
     required this.isNsfw,
+    this.iconUrl,
   });
 
   /// Human-readable extension name.
@@ -165,6 +224,9 @@ class RemoteExtensionEntryModel {
 
   /// Whether this entry should be marked as NSFW in UI.
   final bool isNsfw;
+
+  /// Optional icon URI to render in the source catalog UI.
+  final String? iconUrl;
 
   /// Creates a remote entry from a decoded list element.
   factory RemoteExtensionEntryModel.fromObject(Object? value) {
@@ -193,6 +255,12 @@ class RemoteExtensionEntryModel {
       versionName: versionName,
       installArtifact: installArtifact,
       isNsfw: map['isNsfw'] as bool? ?? false,
+      iconUrl:
+          _readNonEmptyString(map['iconUrl']) ??
+          _readNonEmptyString(map['iconUri']) ??
+          _readNonEmptyString(map['iconURI']) ??
+          _readNonEmptyString(map['icon_url']) ??
+          _readNonEmptyString(map['icon']),
     );
   }
 
@@ -200,18 +268,41 @@ class RemoteExtensionEntryModel {
   ExtensionItem toExtensionItem({
     required ExtensionTrustStatus trustStatus,
     required bool hasUpdate,
+    Uri? repositoryUri,
   }) {
     return ExtensionItem(
       name: name,
       packageName: packageName,
       language: language,
       versionName: versionName,
+      isInstalled: false,
       hasUpdate: hasUpdate,
       isNsfw: isNsfw,
       trustStatus: trustStatus,
-      installArtifact: installArtifact,
+      installArtifact: _resolveRepositoryRelativeUri(
+        repositoryUri,
+        installArtifact,
+      ),
+      iconUrl: _resolveRepositoryRelativeUri(repositoryUri, iconUrl),
     );
   }
+}
+
+String? _resolveRepositoryRelativeUri(Uri? repositoryUri, String? value) {
+  if (value == null) {
+    return null;
+  }
+
+  final Uri? parsedUri = Uri.tryParse(value);
+  if (parsedUri != null && parsedUri.hasScheme) {
+    return value;
+  }
+
+  if (repositoryUri == null) {
+    return value;
+  }
+
+  return repositoryUri.resolveUri(Uri.parse(value)).toString();
 }
 
 int _readInt(Object? value) {

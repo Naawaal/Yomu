@@ -19,8 +19,17 @@ final _extensionsLanguageFilterProvider = StateProvider.autoDispose<String?>(
   (Ref ref) => null,
 );
 
-const double _extensionsSearchHeaderHeight = AppSpacing.xxxl;
-const double _extensionsFilterHeaderHeight = AppSpacing.xxxl;
+enum _ExtensionsQuickFilter { all, installed, updated }
+
+final _extensionsQuickFilterProvider =
+    StateProvider.autoDispose<_ExtensionsQuickFilter>(
+      (Ref ref) => _ExtensionsQuickFilter.all,
+    );
+
+const double _extensionsCompactControlsHeaderHeight =
+    AppSpacing.xxxl + AppSpacing.xxxl + AppSpacing.lg + AppSpacing.sm;
+const double _extensionsExpandedControlsHeaderHeight =
+    AppSpacing.xxxl + AppSpacing.lg + AppSpacing.sm;
 
 /// Screen that lists available extensions.
 class ExtensionsStoreScreen extends ConsumerWidget {
@@ -37,190 +46,239 @@ class ExtensionsStoreScreen extends ConsumerWidget {
     final String? selectedLanguage = ref.watch(
       _extensionsLanguageFilterProvider,
     );
+    final _ExtensionsQuickFilter quickFilter = ref.watch(
+      _extensionsQuickFilterProvider,
+    );
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool isExpanded =
               constraints.maxWidth >= ScreenBreakpoints.medium;
           final int crossAxisCount = isExpanded ? 2 : 1;
-          final double childAspectRatio = isExpanded ? 1.9 : 1.7;
+          final double childAspectRatio = isExpanded ? 2.05 : 1.7;
+          final double controlsHeaderHeight = isExpanded
+              ? _extensionsExpandedControlsHeaderHeight
+              : _extensionsCompactControlsHeaderHeight;
+          final bool isLight = Theme.of(context).brightness == Brightness.light;
 
-          return CustomScrollView(
-            slivers: <Widget>[
-              SliverAppBar.medium(
-                title: const Text(AppStrings.extensionsTitle),
-                actions: <Widget>[
-                  IconButton(
-                    onPressed: () {
-                      ref
-                          .read(extensionsListControllerProvider.notifier)
-                          .refresh();
-                    },
-                    icon: const Icon(Ionicons.refresh_outline),
+          return Stack(
+            children: <Widget>[
+              if (isLight) const _ExtensionsLightBackdrop(),
+              CustomScrollView(
+                slivers: <Widget>[
+                  SliverAppBar.medium(
+                    backgroundColor: Colors.transparent,
+                    surfaceTintColor: Colors.transparent,
+                    elevation: 0,
+                    scrolledUnderElevation: 0,
+                    title: const Text(AppStrings.extensionsTitle),
+                    actions: <Widget>[
+                      IconButton(
+                        onPressed: () {
+                          ref
+                              .read(extensionsListControllerProvider.notifier)
+                              .refresh();
+                        },
+                        icon: const Icon(Ionicons.refresh_outline),
+                      ),
+                    ],
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.lg,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: _ExtensionsHeroSection(isExpanded: isExpanded),
+                    ),
+                  ),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _ExtensionsPinnedHeaderDelegate(
+                      height: controlsHeaderHeight,
+                      child: _ExtensionsControlsHeader(
+                        isExpanded: isExpanded,
+                        languages: asyncExtensions.maybeWhen(
+                          data: _extractLanguages,
+                          orElse: () => const <String>[],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: InsetsTokens.page,
+                    sliver: asyncExtensions.when(
+                      loading: () => SliverToBoxAdapter(
+                        child: _ExtensionsLoadingState(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: childAspectRatio,
+                        ),
+                      ),
+                      error: (Object error, StackTrace stackTrace) =>
+                          _ExtensionsStateSliver(
+                            child: _ExtensionsStateSurface(
+                              child: ErrorState(
+                                title: AppStrings.unableToLoadApp,
+                                message: error.toString(),
+                                retryLabel: AppStrings.retry,
+                                onRetry: () {
+                                  ref
+                                      .read(
+                                        extensionsListControllerProvider
+                                            .notifier,
+                                      )
+                                      .refresh();
+                                },
+                              ),
+                            ),
+                          ),
+                      data: (List<ExtensionItem> items) {
+                        final List<ExtensionItem> filteredItems = items
+                            .where((ExtensionItem item) {
+                              final bool matchesLanguage =
+                                  selectedLanguage == null ||
+                                  item.language == selectedLanguage;
+                              final bool matchesQuery =
+                                  normalizedQuery.isEmpty ||
+                                  item.name.toLowerCase().contains(
+                                    normalizedQuery,
+                                  ) ||
+                                  item.packageName.toLowerCase().contains(
+                                    normalizedQuery,
+                                  ) ||
+                                  item.language.toLowerCase().contains(
+                                    normalizedQuery,
+                                  );
+                              final bool matchesQuickFilter =
+                                  switch (quickFilter) {
+                                    _ExtensionsQuickFilter.all => true,
+                                    _ExtensionsQuickFilter.installed =>
+                                      item.isInstalled,
+                                    _ExtensionsQuickFilter.updated =>
+                                      item.hasUpdate,
+                                  };
+
+                              return matchesLanguage &&
+                                  matchesQuery &&
+                                  matchesQuickFilter;
+                            })
+                            .toList(growable: false);
+                        final _ExtensionSectionGroups sectionGroups =
+                            _ExtensionSectionGroups.fromFiltered(filteredItems);
+
+                        if (items.isEmpty) {
+                          return _ExtensionsStateSliver(
+                            child: _ExtensionsStateSurface(
+                              child: EmptyState(
+                                title: AppStrings.noExtensionsTitle,
+                                description: AppStrings.noExtensionsBody,
+                                actionLabel: AppStrings.retry,
+                                onAction: () {
+                                  ref
+                                      .read(
+                                        extensionsListControllerProvider
+                                            .notifier,
+                                      )
+                                      .refresh();
+                                },
+                                icon: Ionicons.search_outline,
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (filteredItems.isEmpty) {
+                          return const _ExtensionsStateSliver(
+                            child: _ExtensionsStateSurface(
+                              child: EmptyState(
+                                title: AppStrings.noExtensionsTitle,
+                                description: AppStrings.noExtensionsBody,
+                                icon: Ionicons.search_outline,
+                              ),
+                            ),
+                          );
+                        }
+
+                        return _ExtensionCatalogSections(
+                          crossAxisCount: crossAxisCount,
+                          childAspectRatio: childAspectRatio,
+                          sections: <_ExtensionCatalogSectionData>[
+                            if (sectionGroups.installedItems.isNotEmpty)
+                              _ExtensionCatalogSectionData(
+                                title: AppStrings.extensionsInstalledSources,
+                                items: sectionGroups.installedItems,
+                              ),
+                            if (sectionGroups.multiSourceItems.isNotEmpty)
+                              _ExtensionCatalogSectionData(
+                                title: AppStrings.extensionsMoreSources,
+                                items: sectionGroups.multiSourceItems,
+                                compact: true,
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: AppSpacing.xl),
                   ),
                 ],
               ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.md,
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                ),
-                sliver: SliverToBoxAdapter(
-                  child: _ExtensionsHeroSection(isExpanded: isExpanded),
-                ),
-              ),
-              const SliverPersistentHeader(
-                pinned: true,
-                delegate: _ExtensionsPinnedHeaderDelegate(
-                  height: _extensionsSearchHeaderHeight,
-                  child: _ExtensionsSearchHeader(),
-                ),
-              ),
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _ExtensionsPinnedHeaderDelegate(
-                  height: _extensionsFilterHeaderHeight,
-                  child: _ExtensionsLanguageFilters(
-                    languages: asyncExtensions.maybeWhen(
-                      data: _extractLanguages,
-                      orElse: () => const <String>[],
-                    ),
-                  ),
-                ),
-              ),
-              SliverPadding(
-                padding: InsetsTokens.page,
-                sliver: asyncExtensions.when(
-                  loading: () => SliverToBoxAdapter(
-                    child: _ExtensionsLoadingState(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: childAspectRatio,
-                    ),
-                  ),
-                  error: (Object error, StackTrace stackTrace) =>
-                      SliverToBoxAdapter(
-                        child: _ExtensionsStateSurface(
-                          child: ErrorState(
-                            title: AppStrings.unableToLoadApp,
-                            message: error.toString(),
-                            retryLabel: AppStrings.retry,
-                            onRetry: () {
-                              ref
-                                  .read(
-                                    extensionsListControllerProvider.notifier,
-                                  )
-                                  .refresh();
-                            },
-                          ),
-                        ),
-                      ),
-                  data: (List<ExtensionItem> items) {
-                    final List<ExtensionItem> filteredItems = items
-                        .where((ExtensionItem item) {
-                          final bool matchesLanguage =
-                              selectedLanguage == null ||
-                              item.language == selectedLanguage;
-                          final bool matchesQuery =
-                              normalizedQuery.isEmpty ||
-                              item.name.toLowerCase().contains(
-                                normalizedQuery,
-                              ) ||
-                              item.packageName.toLowerCase().contains(
-                                normalizedQuery,
-                              ) ||
-                              item.language.toLowerCase().contains(
-                                normalizedQuery,
-                              );
-
-                          return matchesLanguage && matchesQuery;
-                        })
-                        .toList(growable: false);
-                    final List<ExtensionItem> updateItems = filteredItems
-                        .where((ExtensionItem item) => item.hasUpdate)
-                        .toList(growable: false);
-                    final Set<String> updatePackages = updateItems
-                        .map((ExtensionItem item) => item.packageName)
-                        .toSet();
-                    final List<ExtensionItem> trustedItems = filteredItems
-                        .where((ExtensionItem item) {
-                          return item.trustStatus ==
-                                  ExtensionTrustStatus.trusted &&
-                              !item.hasUpdate;
-                        })
-                        .toList(growable: false);
-                    final List<ExtensionItem> installReadyItems = trustedItems;
-                    final List<ExtensionItem> remainingItems = filteredItems
-                        .where((ExtensionItem item) {
-                          return item.trustStatus !=
-                                  ExtensionTrustStatus.trusted &&
-                              !updatePackages.contains(item.packageName);
-                        })
-                        .toList(growable: false);
-
-                    if (items.isEmpty) {
-                      return SliverToBoxAdapter(
-                        child: _ExtensionsStateSurface(
-                          child: EmptyState(
-                            title: AppStrings.noExtensionsTitle,
-                            description: AppStrings.noExtensionsBody,
-                            actionLabel: AppStrings.retry,
-                            onAction: () {
-                              ref
-                                  .read(
-                                    extensionsListControllerProvider.notifier,
-                                  )
-                                  .refresh();
-                            },
-                            icon: Ionicons.search_outline,
-                          ),
-                        ),
-                      );
-                    }
-
-                    if (filteredItems.isEmpty) {
-                      return const SliverToBoxAdapter(
-                        child: _ExtensionsStateSurface(
-                          child: EmptyState(
-                            title: AppStrings.noExtensionsTitle,
-                            description: AppStrings.noExtensionsBody,
-                            icon: Ionicons.search_outline,
-                          ),
-                        ),
-                      );
-                    }
-
-                    return _ExtensionCatalogSections(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: childAspectRatio,
-                      sections: <_ExtensionCatalogSectionData>[
-                        if (updateItems.isNotEmpty)
-                          _ExtensionCatalogSectionData(
-                            title: AppStrings.extensionsRecentlyUpdated,
-                            items: updateItems,
-                          ),
-                        if (installReadyItems.isNotEmpty)
-                          _ExtensionCatalogSectionData(
-                            title: AppStrings.extensionsTrustedRecommendations,
-                            items: installReadyItems,
-                          ),
-                        if (remainingItems.isNotEmpty)
-                          _ExtensionCatalogSectionData(
-                            title: AppStrings.extensionsMoreSources,
-                            items: remainingItems,
-                          ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
             ],
           );
         },
       ),
+    );
+  }
+}
+
+class _ExtensionSectionGroups {
+  const _ExtensionSectionGroups({
+    required this.installedItems,
+    required this.multiSourceItems,
+  });
+
+  final List<ExtensionItem> installedItems;
+  final List<ExtensionItem> multiSourceItems;
+
+  factory _ExtensionSectionGroups.fromFiltered(List<ExtensionItem> items) {
+    final List<ExtensionItem> installed = items
+        .where((ExtensionItem item) => item.isInstalled)
+        .toList(growable: false);
+
+    final List<ExtensionItem> nonInstalled = items
+        .where((ExtensionItem item) => !item.isInstalled)
+        .toList(growable: false);
+
+    final List<ExtensionItem> updates = nonInstalled
+        .where((ExtensionItem item) => item.hasUpdate)
+        .toList(growable: false);
+    final List<ExtensionItem> trusted = nonInstalled
+        .where((ExtensionItem item) {
+          return !item.hasUpdate &&
+              item.trustStatus == ExtensionTrustStatus.trusted;
+        })
+        .toList(growable: false);
+    final List<ExtensionItem> remaining = nonInstalled
+        .where((ExtensionItem item) {
+          return !item.hasUpdate &&
+              item.trustStatus != ExtensionTrustStatus.trusted;
+        })
+        .toList(growable: false);
+
+    final List<ExtensionItem> multi = <ExtensionItem>[
+      ...updates,
+      ...trusted,
+      ...remaining,
+    ];
+
+    return _ExtensionSectionGroups(
+      installedItems: installed,
+      multiSourceItems: multi,
     );
   }
 }
@@ -241,6 +299,108 @@ class _ExtensionsSearchHeader extends ConsumerStatefulWidget {
   @override
   ConsumerState<_ExtensionsSearchHeader> createState() =>
       _ExtensionsSearchHeaderState();
+}
+
+class _ExtensionsControlsHeader extends StatelessWidget {
+  const _ExtensionsControlsHeader({
+    required this.languages,
+    required this.isExpanded,
+  });
+
+  final List<String> languages;
+  final bool isExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    if (isExpanded) {
+      return Row(
+        children: <Widget>[
+          const Expanded(flex: 5, child: _ExtensionsSearchHeader()),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            flex: 7,
+            child: _ExtensionsLanguageFilters(
+              languages: languages,
+              isExpanded: true,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        const _ExtensionsSearchHeader(),
+        const SizedBox(height: AppSpacing.sm),
+        _ExtensionsLanguageFilters(languages: languages),
+      ],
+    );
+  }
+}
+
+class _ExtensionsLightBackdrop extends StatelessWidget {
+  const _ExtensionsLightBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return IgnorePointer(
+      child: Stack(
+        children: <Widget>[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: <Color>[
+                  colorScheme.primaryContainer.withValues(alpha: 0.22),
+                  colorScheme.surface,
+                  colorScheme.surface,
+                ],
+              ),
+            ),
+            child: const SizedBox.expand(),
+          ),
+          Positioned(
+            top: -120,
+            right: -80,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: <Color>[
+                    colorScheme.tertiaryContainer.withValues(alpha: 0.18),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 180,
+            left: -120,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: <Color>[
+                    colorScheme.secondaryContainer.withValues(alpha: 0.16),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ExtensionsSearchHeaderState
@@ -265,77 +425,136 @@ class _ExtensionsSearchHeaderState
   Widget build(BuildContext context) {
     final String query = ref.watch(_extensionsSearchQueryProvider);
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final bool hasQuery = query.trim().isNotEmpty;
 
-    return AppTextInput(
-      controller: _controller,
-      hint: AppStrings.extensionsSearchHint,
-      leadingIcon: Icon(
-        Ionicons.search_outline,
-        color: colorScheme.onSurfaceVariant,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: hasQuery ? colorScheme.outline : colorScheme.outlineVariant,
+        ),
       ),
-      trailingWidget: query.isEmpty
-          ? null
-          : IconButton(
-              onPressed: () {
-                _controller.clear();
-                ref.read(_extensionsSearchQueryProvider.notifier).state = '';
-              },
-              icon: Icon(
-                Ionicons.close_circle_outline,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-      onChanged: (String value) {
-        ref.read(_extensionsSearchQueryProvider.notifier).state = value;
-      },
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xs),
+        child: AppTextInput(
+          controller: _controller,
+          hint: AppStrings.extensionsSearchHint,
+          leadingIcon: Icon(
+            Ionicons.search_outline,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          trailingWidget: hasQuery
+              ? IconButton(
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    _controller.clear();
+                    ref.read(_extensionsSearchQueryProvider.notifier).state =
+                        '';
+                  },
+                  icon: Icon(
+                    Ionicons.close_circle_outline,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                )
+              : null,
+          onChanged: (String value) {
+            ref.read(_extensionsSearchQueryProvider.notifier).state = value;
+          },
+        ),
+      ),
     );
   }
 }
 
 class _ExtensionsLanguageFilters extends ConsumerWidget {
-  const _ExtensionsLanguageFilters({required this.languages});
+  const _ExtensionsLanguageFilters({
+    required this.languages,
+    this.isExpanded = false,
+  });
 
   final List<String> languages;
+  final bool isExpanded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final String? selectedLanguage = ref.watch(
       _extensionsLanguageFilterProvider,
     );
+    final _ExtensionsQuickFilter quickFilter = ref.watch(
+      _extensionsQuickFilterProvider,
+    );
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      child: Row(
-        children: <Widget>[
-          FilterChip(
-            label: const Text(AppStrings.extensionsAllLanguages),
-            selected: selectedLanguage == null,
-            showCheckmark: false,
-            selectedColor: Theme.of(context).colorScheme.secondaryContainer,
-            side: BorderSide(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            onSelected: (_) {
-              ref.read(_extensionsLanguageFilterProvider.notifier).state = null;
-            },
-          ),
-          for (final String language in languages) ...<Widget>[
-            const SizedBox(width: AppSpacing.sm),
+      child: Align(
+        alignment: isExpanded ? Alignment.centerLeft : Alignment.center,
+        child: Row(
+          children: <Widget>[
             FilterChip(
-              label: Text(language.toUpperCase()),
-              selected: selectedLanguage == language,
+              label: const Text(AppStrings.extensionsAllLanguages),
+              selected: quickFilter == _ExtensionsQuickFilter.all,
               showCheckmark: false,
-              selectedColor: Theme.of(context).colorScheme.secondaryContainer,
-              side: BorderSide(
-                color: Theme.of(context).colorScheme.outlineVariant,
-              ),
-              onSelected: (bool isSelected) {
-                ref.read(_extensionsLanguageFilterProvider.notifier).state =
-                    isSelected ? language : null;
+              selectedColor: colorScheme.secondaryContainer,
+              side: BorderSide(color: colorScheme.outlineVariant),
+              onSelected: (_) {
+                ref.read(_extensionsQuickFilterProvider.notifier).state =
+                    _ExtensionsQuickFilter.all;
               },
             ),
+            const SizedBox(width: AppSpacing.sm),
+            FilterChip(
+              label: const Text(AppStrings.installed),
+              selected: quickFilter == _ExtensionsQuickFilter.installed,
+              showCheckmark: false,
+              selectedColor: colorScheme.secondaryContainer,
+              side: BorderSide(color: colorScheme.outlineVariant),
+              onSelected: (_) {
+                ref.read(_extensionsQuickFilterProvider.notifier).state =
+                    _ExtensionsQuickFilter.installed;
+              },
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            FilterChip(
+              label: const Text(AppStrings.extensionsRecentlyUpdated),
+              selected: quickFilter == _ExtensionsQuickFilter.updated,
+              showCheckmark: false,
+              selectedColor: colorScheme.secondaryContainer,
+              side: BorderSide(color: colorScheme.outlineVariant),
+              onSelected: (_) {
+                ref.read(_extensionsQuickFilterProvider.notifier).state =
+                    _ExtensionsQuickFilter.updated;
+              },
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            FilterChip(
+              label: const Text(AppStrings.extensionsAllLanguages),
+              selected: selectedLanguage == null,
+              showCheckmark: false,
+              selectedColor: colorScheme.secondaryContainer,
+              side: BorderSide(color: colorScheme.outlineVariant),
+              onSelected: (_) {
+                ref.read(_extensionsLanguageFilterProvider.notifier).state =
+                    null;
+              },
+            ),
+            for (final String language in languages) ...<Widget>[
+              const SizedBox(width: AppSpacing.sm),
+              FilterChip(
+                label: Text(language.toUpperCase()),
+                selected: selectedLanguage == language,
+                showCheckmark: false,
+                selectedColor: colorScheme.secondaryContainer,
+                side: BorderSide(color: colorScheme.outlineVariant),
+                onSelected: (bool isSelected) {
+                  ref.read(_extensionsLanguageFilterProvider.notifier).state =
+                      isSelected ? language : null;
+                },
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -350,7 +569,24 @@ class _ExtensionsStateSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard.featured(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _ExtensionsStateSliver extends StatelessWidget {
+  const _ExtensionsStateSliver({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverFillRemaining(
+      hasScrollBody: false,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: AppSpacing.xl),
         child: child,
       ),
     );
@@ -376,14 +612,14 @@ class _ExtensionsLoadingState extends StatelessWidget {
         children: <Widget>[
           AppCard.featured(
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   DecoratedBox(
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     child: const SizedBox(height: 20, width: 160),
                   ),
@@ -391,7 +627,7 @@ class _ExtensionsLoadingState extends StatelessWidget {
                   DecoratedBox(
                     decoration: BoxDecoration(
                       color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppRadius.xs),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: const SizedBox(height: 14, width: 240),
                   ),
@@ -494,10 +730,12 @@ class _ExtensionCatalogSectionData {
   const _ExtensionCatalogSectionData({
     required this.title,
     required this.items,
+    this.compact = false,
   });
 
   final String title;
   final List<ExtensionItem> items;
+  final bool compact;
 }
 
 class _ExtensionCatalogSections extends StatelessWidget {
@@ -525,6 +763,7 @@ class _ExtensionCatalogSections extends StatelessWidget {
             items: sections[index].items,
             crossAxisCount: crossAxisCount,
             childAspectRatio: childAspectRatio,
+            compact: sections[index].compact,
           ),
           if (index < sections.length - 1)
             const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
@@ -540,12 +779,14 @@ class _ExtensionCatalogSection extends StatelessWidget {
     required this.items,
     required this.crossAxisCount,
     required this.childAspectRatio,
+    required this.compact,
   });
 
   final String title;
   final List<ExtensionItem> items;
   final int crossAxisCount;
   final double childAspectRatio;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -579,28 +820,46 @@ class _ExtensionCatalogSection extends StatelessWidget {
           ),
         ),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.sm)),
-        SliverGrid(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: childAspectRatio,
-          ),
-          delegate: SliverChildBuilderDelegate((
-            BuildContext context,
-            int index,
-          ) {
-            final ExtensionItem item = items[index];
-            return MangaSourceCard(
-              key: ValueKey<String>(item.packageName),
-              item: item,
-              onPressed: () {
-                ExtensionDetailsRoute.push(context, item.packageName);
-              },
-              genres: const <String>[],
-            );
-          }, childCount: items.length),
-        ),
+        compact
+            ? SliverList.separated(
+                itemCount: items.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final ExtensionItem item = items[index];
+                  return MangaSourceCard(
+                    key: ValueKey<String>(item.packageName),
+                    item: item,
+                    onPressed: () {
+                      ExtensionDetailsRoute.push(context, item.packageName);
+                    },
+                    genres: const <String>[],
+                    compact: true,
+                  );
+                },
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: AppSpacing.sm),
+              )
+            : SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: AppSpacing.md,
+                  mainAxisSpacing: AppSpacing.md,
+                  childAspectRatio: childAspectRatio,
+                ),
+                delegate: SliverChildBuilderDelegate((
+                  BuildContext context,
+                  int index,
+                ) {
+                  final ExtensionItem item = items[index];
+                  return MangaSourceCard(
+                    key: ValueKey<String>(item.packageName),
+                    item: item,
+                    onPressed: () {
+                      ExtensionDetailsRoute.push(context, item.packageName);
+                    },
+                    genres: const <String>[],
+                  );
+                }, childCount: items.length),
+              ),
       ],
     );
   }
@@ -628,9 +887,13 @@ class _ExtensionsPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final Color backgroundColor = Theme.of(context).colorScheme.surface;
+    final bool hasOverlap = overlapsContent || shrinkOffset > 0;
+    final double overlayAlpha = hasOverlap ? 0.82 : 0.62;
 
-    return ColoredBox(
-      color: backgroundColor,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      color: backgroundColor.withValues(alpha: overlayAlpha),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.md,

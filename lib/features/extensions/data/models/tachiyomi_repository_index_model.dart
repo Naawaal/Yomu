@@ -43,6 +43,7 @@ class _TachiyomiRepositoryEntryModel {
     required this.versionName,
     required this.apkFileName,
     required this.isNsfw,
+    this.iconUrl,
   });
 
   final String name;
@@ -51,6 +52,7 @@ class _TachiyomiRepositoryEntryModel {
   final String versionName;
   final String apkFileName;
   final bool isNsfw;
+  final String? iconUrl;
 
   factory _TachiyomiRepositoryEntryModel.fromObject(Object? value) {
     if (value is! Map<Object?, Object?>) {
@@ -70,6 +72,10 @@ class _TachiyomiRepositoryEntryModel {
       versionName: _requireNonEmptyString(map, 'version'),
       apkFileName: _requireNonEmptyString(map, 'apk'),
       isNsfw: _readBoolLike(map['nsfw']) ?? false,
+      iconUrl:
+          _readNonEmptyString(map['iconUrl']) ??
+          _readNonEmptyString(map['icon_url']) ??
+          _readNonEmptyString(map['icon']),
     );
   }
 
@@ -83,6 +89,7 @@ class _TachiyomiRepositoryEntryModel {
       versionName: versionName,
       installArtifact: resolveInstallArtifact(apkFileName),
       isNsfw: isNsfw,
+      iconUrl: iconUrl,
     );
   }
 }

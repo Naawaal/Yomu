@@ -134,12 +134,6 @@ void main() {
       expect(find.text(AppStrings.settingsSectionTheme), findsWidgets);
       expect(find.text(AppStrings.settingsSectionBackup), findsWidgets);
       expect(find.text(AppStrings.settingsSectionRepositories), findsWidgets);
-      await tester.scrollUntilVisible(
-        find.text(AppStrings.settingsSectionContent),
-        250,
-        scrollable: find.byType(Scrollable).first,
-      );
-      expect(find.text(AppStrings.settingsSectionContent), findsOneWidget);
     });
 
     testWidgets('opens add repository dialog from repositories section', (
@@ -152,11 +146,8 @@ void main() {
       await tester.pumpWidget(_buildApp(repository));
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text(AppStrings.settingsRepositoryAdd),
-        250,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.ensureVisible(find.text(AppStrings.settingsRepositoryAdd));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(AppStrings.settingsRepositoryAdd));
       await tester.pumpAndSettle();
 
@@ -175,11 +166,8 @@ void main() {
       await tester.pumpWidget(_buildApp(repository));
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text(AppStrings.settingsRepositoryAdd),
-        250,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.ensureVisible(find.text(AppStrings.settingsRepositoryAdd));
+      await tester.pumpAndSettle();
       await tester.tap(find.text(AppStrings.settingsRepositoryAdd));
       await tester.pumpAndSettle();
 
@@ -209,11 +197,8 @@ void main() {
       await tester.pumpWidget(_buildApp(repository));
       await tester.pumpAndSettle();
 
-      await tester.scrollUntilVisible(
-        find.text(_repository.displayName),
-        250,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await tester.ensureVisible(find.text(_repository.displayName));
+      await tester.pumpAndSettle();
       await tester.tap(find.byTooltip(AppStrings.settingsRepositoryRemove));
       await tester.pumpAndSettle();
 

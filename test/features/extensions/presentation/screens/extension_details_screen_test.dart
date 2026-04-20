@@ -32,6 +32,25 @@ class _FakeExtensionRepository implements ExtensionRepository {
     installCalls += 1;
     installedPackage = packageName;
     this.installArtifact = installArtifact;
+
+    final int index = items.indexWhere(
+      (ExtensionItem item) => item.packageName == packageName,
+    );
+    if (index >= 0) {
+      final ExtensionItem current = items[index];
+      items[index] = ExtensionItem(
+        name: current.name,
+        packageName: current.packageName,
+        language: current.language,
+        versionName: current.versionName,
+        isInstalled: true,
+        hasUpdate: current.hasUpdate,
+        isNsfw: current.isNsfw,
+        trustStatus: current.trustStatus,
+        installArtifact: current.installArtifact,
+        iconUrl: current.iconUrl,
+      );
+    }
   }
 }
 
@@ -56,6 +75,7 @@ void main() {
     packageName: 'eu.kanade.tachiyomi.extension.en.nekoscans',
     language: 'en',
     versionName: '2.1.0',
+    isInstalled: false,
     hasUpdate: false,
     isNsfw: false,
     trustStatus: ExtensionTrustStatus.untrusted,
@@ -68,11 +88,38 @@ void main() {
     packageName: 'eu.kanade.tachiyomi.extension.all.mangadex',
     language: 'all',
     versionName: '1.4.9',
+    isInstalled: true,
     hasUpdate: true,
     isNsfw: false,
     trustStatus: ExtensionTrustStatus.trusted,
     installArtifact: 'https://example.com/mangadex.apk',
     iconUrl: 'https://example.com/mangadex.png',
+  );
+
+  const ExtensionItem installedUntrustedItem = ExtensionItem(
+    name: 'NekoScans',
+    packageName: 'eu.kanade.tachiyomi.extension.en.nekoscans.installed',
+    language: 'en',
+    versionName: '2.1.0',
+    isInstalled: true,
+    hasUpdate: false,
+    isNsfw: false,
+    trustStatus: ExtensionTrustStatus.untrusted,
+    installArtifact: 'https://example.com/nekoscans.apk',
+    iconUrl: 'https://example.com/nekoscans.png',
+  );
+
+  const ExtensionItem installableItem = ExtensionItem(
+    name: 'MangaPlus',
+    packageName: 'eu.kanade.tachiyomi.extension.en.mangaplus',
+    language: 'en',
+    versionName: '1.0.0',
+    isInstalled: false,
+    hasUpdate: false,
+    isNsfw: false,
+    trustStatus: ExtensionTrustStatus.untrusted,
+    installArtifact: 'https://example.com/mangaplus.apk',
+    iconUrl: 'https://example.com/mangaplus.png',
   );
 
   group('ExtensionDetailsScreen actions', () {
@@ -130,6 +177,50 @@ void main() {
       },
     );
 
+    testWidgets('shows installed state for untrusted installed extension', (
+      WidgetTester tester,
+    ) async {
+      final _FakeExtensionRepository repository = _FakeExtensionRepository(
+        items: const <ExtensionItem>[installedUntrustedItem],
+      );
+
+      await tester.pumpWidget(
+        _buildTestApp(
+          repository: repository,
+          packageName: installedUntrustedItem.packageName,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.installed), findsAtLeastNWidgets(1));
+      expect(find.text(AppStrings.install), findsNothing);
+    });
+
+    testWidgets('refreshes to installed state after install completes', (
+      WidgetTester tester,
+    ) async {
+      final _FakeExtensionRepository repository = _FakeExtensionRepository(
+        items: <ExtensionItem>[installableItem],
+      );
+
+      await tester.pumpWidget(
+        _buildTestApp(
+          repository: repository,
+          packageName: installableItem.packageName,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(AppStrings.install), findsAtLeastNWidgets(1));
+
+      await tester.tap(find.widgetWithText(FilledButton, AppStrings.install));
+      await tester.pumpAndSettle();
+
+      expect(repository.installCalls, 1);
+      expect(find.text(AppStrings.installed), findsAtLeastNWidgets(1));
+      expect(find.text(AppStrings.install), findsNothing);
+    });
+
     testWidgets('shows not found empty state for unknown package', (
       WidgetTester tester,
     ) async {
@@ -144,6 +235,35 @@ void main() {
 
       expect(find.text(AppStrings.extensionNotFound), findsOneWidget);
       expect(find.text(AppStrings.noExtensionsBody), findsOneWidget);
+    });
+  });
+
+  group('ExtensionDetailsScreen artwork', () {
+    testWidgets('shows fallback initial when iconUrl is empty', (
+      WidgetTester tester,
+    ) async {
+      const ExtensionItem item = ExtensionItem(
+        name: 'Zeta Manga',
+        packageName: 'eu.kanade.tachiyomi.extension.en.zeta',
+        language: 'en',
+        versionName: '3.0.0',
+        isInstalled: true,
+        hasUpdate: false,
+        isNsfw: false,
+        trustStatus: ExtensionTrustStatus.trusted,
+        iconUrl: '',
+      );
+
+      final _FakeExtensionRepository repository = _FakeExtensionRepository(
+        items: const <ExtensionItem>[item],
+      );
+
+      await tester.pumpWidget(
+        _buildTestApp(repository: repository, packageName: item.packageName),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Z'), findsWidgets);
     });
   });
 }

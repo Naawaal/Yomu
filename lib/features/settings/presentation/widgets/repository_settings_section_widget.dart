@@ -57,13 +57,13 @@ class RepositorySettingsSectionWidget extends StatelessWidget {
 
     return Semantics(
       container: true,
-      label: 'Repository list and management',
+      label: AppStrings.settingsRepositorySectionSemantics,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (repositories.isEmpty)
             Semantics(
-              label: 'No repositories configured',
+              label: AppStrings.settingsRepositoryEmptySemantics,
               enabled: true,
               child: Text(
                 AppStrings.settingsRepositoriesEmpty,
@@ -110,7 +110,7 @@ class RepositorySettingsSectionWidget extends StatelessWidget {
             button: true,
             enabled: true,
             onTap: onAddRepository,
-            label: 'Add a new repository',
+            label: AppStrings.settingsRepositoryAddSemantics,
             child: AppButton.outlined(
               label: AppStrings.settingsRepositoryAdd,
               leadingIcon: const Icon(Ionicons.add_outline),

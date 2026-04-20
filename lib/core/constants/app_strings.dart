@@ -75,11 +75,20 @@ abstract final class AppStrings {
   /// Install action label.
   static const String install = 'Install';
 
+  /// Installing action label.
+  static const String installing = 'Installing';
+
+  /// Label for installed state.
+  static const String installed = 'Installed';
+
   /// Update action label.
   static const String update = 'Update';
 
   /// Trust action label.
   static const String trustAndEnable = 'Trust and Enable';
+
+  /// Manage action label.
+  static const String manage = 'Manage';
 
   /// Label for extension package metadata.
   static const String packageLabel = 'Package';
@@ -132,9 +141,12 @@ abstract final class AppStrings {
   /// Extensions section title for sources ready to install.
   static const String extensionsInstallReady = 'Ready to install';
 
-    /// Error shown when install is requested without an install artifact.
-    static const String extensionsInstallArtifactMissing =
-            'Install artifact missing. Refresh extensions and try again.';
+  /// Extensions section title for currently installed sources.
+  static const String extensionsInstalledSources = 'Installed sources';
+
+  /// Error shown when install is requested without an install artifact.
+  static const String extensionsInstallArtifactMissing =
+      'Install artifact missing. Refresh extensions and try again.';
 
   /// Extensions section title for the remaining catalog.
   static const String extensionsMoreSources = 'More sources';
@@ -282,6 +294,39 @@ abstract final class AppStrings {
 
   /// Settings section title for repository management.
   static const String settingsSectionRepositories = 'Repositories';
+
+  /// Semantics label for the backup section container.
+  static const String settingsBackupSectionSemantics =
+      'Backup actions: export and import';
+
+  /// Semantics label for the theme selector container.
+  static const String settingsThemeSelectionSemantics =
+      'Theme preference selection';
+
+  /// Semantics label for the repository section container.
+  static const String settingsRepositorySectionSemantics =
+      'Repository list and management';
+
+  /// Semantics label for the repository empty state.
+  static const String settingsRepositoryEmptySemantics =
+      'No repositories configured';
+
+  /// Semantics label for the add repository action.
+  static const String settingsRepositoryAddSemantics = 'Add a new repository';
+
+  /// Error shown when a settings operation fails.
+  static const String settingsOperationFailedTryAgain =
+      'Operation failed. Try again.';
+
+  /// Semantics label for the export backup action with last export metadata.
+  static String settingsBackupExportSemantics(String lastExport) {
+    return 'Export backup, last export: $lastExport';
+  }
+
+  /// Semantics label for the import backup action with last import metadata.
+  static String settingsBackupImportSemantics(String lastImport) {
+    return 'Import backup, last import: $lastImport';
+  }
 
   /// Theme mode label for system setting.
   static const String settingsThemeSystem = 'System';

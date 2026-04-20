@@ -62,6 +62,46 @@ class _StubHostClient implements ExtensionsHostClient {
           : 'Install requires user action.',
     );
   }
+
+  @override
+  Future<HostSourceRuntimePageResult> executeLatest({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    return HostSourceRuntimePageResult(
+      sourceId: sourceId,
+      items: const <HostSourceMangaPayload>[],
+      hasMore: false,
+    );
+  }
+
+  @override
+  Future<HostSourceRuntimePageResult> executePopular({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    return HostSourceRuntimePageResult(
+      sourceId: sourceId,
+      items: const <HostSourceMangaPayload>[],
+      hasMore: false,
+    );
+  }
+
+  @override
+  Future<HostSourceRuntimePageResult> executeSearch({
+    required String sourceId,
+    required String query,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    return HostSourceRuntimePageResult(
+      sourceId: sourceId,
+      items: const <HostSourceMangaPayload>[],
+      hasMore: false,
+    );
+  }
 }
 
 /// A [ExtensionsHostClient] whose [getRuntimeInfo] throws on every call.
@@ -84,6 +124,28 @@ class _ThrowingRuntimeHostClient implements ExtensionsHostClient {
   Future<HostInstallResult> installExtension(
     String packageName, {
     String? installArtifact,
+  }) => Future.error(exception);
+
+  @override
+  Future<HostSourceRuntimePageResult> executeLatest({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) => Future.error(exception);
+
+  @override
+  Future<HostSourceRuntimePageResult> executePopular({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) => Future.error(exception);
+
+  @override
+  Future<HostSourceRuntimePageResult> executeSearch({
+    required String sourceId,
+    required String query,
+    int page = 1,
+    int pageSize = 20,
   }) => Future.error(exception);
 }
 
@@ -139,6 +201,48 @@ const _kNoCapabilities = <String>{};
 // ---------------------------------------------------------------------------
 
 void main() {
+  group('HostExtensionPayload.fromMap()', () {
+    test('reads iconUrl from supported alias keys', () {
+      final payloadFromIconUrl = HostExtensionPayload.fromMap(<String, Object?>{
+        'name': 'MangaDex',
+        'packageName': 'pkg.a',
+        'iconUrl': 'https://repo.example/icon-a.png',
+      });
+      final payloadFromIconUri = HostExtensionPayload.fromMap(<String, Object?>{
+        'name': 'NekoScans',
+        'packageName': 'pkg.b',
+        'iconUri': 'https://repo.example/icon-b.png',
+      });
+      final payloadFromSnakeCase =
+          HostExtensionPayload.fromMap(<String, Object?>{
+            'name': 'Comick',
+            'packageName': 'pkg.c',
+            'icon_url': 'https://repo.example/icon-c.png',
+          });
+
+      expect(payloadFromIconUrl.iconUrl, 'https://repo.example/icon-a.png');
+      expect(payloadFromIconUri.iconUrl, 'https://repo.example/icon-b.png');
+      expect(payloadFromSnakeCase.iconUrl, 'https://repo.example/icon-c.png');
+    });
+
+    test('returns null iconUrl for missing or empty values', () {
+      final payloadWithoutIcon = HostExtensionPayload.fromMap(<String, Object?>{
+        'name': 'No Icon',
+        'packageName': 'pkg.none',
+      });
+      final payloadWithEmptyIcon = HostExtensionPayload.fromMap(
+        <String, Object?>{
+          'name': 'Empty Icon',
+          'packageName': 'pkg.empty',
+          'icon': '',
+        },
+      );
+
+      expect(payloadWithoutIcon.iconUrl, isNull);
+      expect(payloadWithEmptyIcon.iconUrl, isNull);
+    });
+  });
+
   group('BridgeExtensionRepository.getAvailableExtensions()', () {
     test('uses native path when extensions.list capability present', () async {
       final stub = _StubHostClient(
@@ -152,6 +256,7 @@ void main() {
             'hasUpdate': false,
             'isNsfw': false,
             'isTrusted': true,
+            'iconUrl': 'https://repo.example/mangadex.png',
           }),
         ],
       );
@@ -162,6 +267,7 @@ void main() {
 
       expect(result, hasLength(1));
       expect(result.first.name, 'MangaDex');
+      expect(result.first.iconUrl, 'https://repo.example/mangadex.png');
       expect(fallback.getAvailableCalled, isFalse);
     });
 
@@ -453,7 +559,7 @@ void main() {
       },
     );
 
-    test('treats requiresUserAction as pending (non-error)', () async {
+    test('surfaces requiresUserAction as explicit pending error', () async {
       final stub = _StubHostClient(
         capabilities: _kFullCapabilities,
         installState: HostInstallState.requiresUserAction,
@@ -461,10 +567,41 @@ void main() {
       final fallback = _SpyFallbackRepository();
       final repo = _makeRepo(client: stub, fallback: fallback);
 
-      // Should not throw; returns successfully
-      await repo.install(packageName, installArtifact: resolvedArtifact);
+      await expectLater(
+        repo.install(packageName, installArtifact: resolvedArtifact),
+        throwsA(
+          isA<ExtensionInstallException>()
+              .having(
+                (ExtensionInstallException error) => error.code,
+                'code',
+                ExtensionInstallErrorCode.requiresUserAction,
+              )
+              .having(
+                (ExtensionInstallException error) => error.message,
+                'message',
+                'Install requires user action.',
+              ),
+        ),
+      );
 
       expect(stub.installCalled, isTrue);
+      expect(fallback.installCalled, isFalse);
+    });
+
+    test('treats PACKAGE_ALREADY_INSTALLED as success', () async {
+      final stub = _StubHostClient(
+        capabilities: _kFullCapabilities,
+        installThrows: PlatformException(
+          code: ExtensionInstallErrorCode.packageAlreadyInstalled,
+          message: 'Extension already installed',
+        ),
+      );
+      final fallback = _SpyFallbackRepository();
+      final repo = _makeRepo(client: stub, fallback: fallback);
+
+      await repo.install(packageName, installArtifact: resolvedArtifact);
+
+      expect(stub.installCalled, isFalse);
       expect(fallback.installCalled, isFalse);
     });
   });

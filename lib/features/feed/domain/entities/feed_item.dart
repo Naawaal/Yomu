@@ -6,6 +6,7 @@ import 'package:meta/meta.dart';
 class FeedItem extends Equatable {
   const FeedItem({
     required this.id,
+    required this.sourceId,
     required this.title,
     required this.subtitle,
     required this.imageUrl,
@@ -14,6 +15,7 @@ class FeedItem extends Equatable {
   });
 
   final String id;
+  final String sourceId;
   final String title;
   final String subtitle;
   final String imageUrl;
@@ -23,6 +25,7 @@ class FeedItem extends Equatable {
   @override
   List<Object?> get props => [
     id,
+    sourceId,
     title,
     subtitle,
     imageUrl,

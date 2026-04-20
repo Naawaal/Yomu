@@ -53,9 +53,9 @@ class SettingsScreen extends ConsumerWidget {
       }
 
       if (next.hasError) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(next.error.toString())));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppStrings.settingsOperationFailedTryAgain)),
+        );
         return;
       }
 
@@ -415,7 +415,7 @@ class _SectionWithOperationState extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
-                      'Operation failed. Try again.',
+                      AppStrings.settingsOperationFailedTryAgain,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: colorScheme.onErrorContainer,
                       ),

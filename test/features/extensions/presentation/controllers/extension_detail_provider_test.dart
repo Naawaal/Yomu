@@ -52,6 +52,46 @@ class _FakeHostClient implements ExtensionsHostClient {
       message: 'Install session committed.',
     );
   }
+
+  @override
+  Future<HostSourceRuntimePageResult> executeLatest({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    return HostSourceRuntimePageResult(
+      sourceId: sourceId,
+      items: const <HostSourceMangaPayload>[],
+      hasMore: false,
+    );
+  }
+
+  @override
+  Future<HostSourceRuntimePageResult> executePopular({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    return HostSourceRuntimePageResult(
+      sourceId: sourceId,
+      items: const <HostSourceMangaPayload>[],
+      hasMore: false,
+    );
+  }
+
+  @override
+  Future<HostSourceRuntimePageResult> executeSearch({
+    required String sourceId,
+    required String query,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    return HostSourceRuntimePageResult(
+      sourceId: sourceId,
+      items: const <HostSourceMangaPayload>[],
+      hasMore: false,
+    );
+  }
 }
 
 class _StaticFallback implements ExtensionRepository {
@@ -78,6 +118,7 @@ const ExtensionItem _mangadex = ExtensionItem(
   packageName: 'eu.kanade.tachiyomi.extension.all.mangadex',
   language: 'all',
   versionName: '1.4.9',
+  isInstalled: true,
   hasUpdate: true,
   isNsfw: false,
   trustStatus: ExtensionTrustStatus.trusted,
@@ -88,6 +129,7 @@ const ExtensionItem _nsfw = ExtensionItem(
   packageName: 'eu.kanade.tachiyomi.extension.all.nekoscans',
   language: 'all',
   versionName: '1.4.5',
+  isInstalled: true,
   hasUpdate: false,
   isNsfw: true,
   trustStatus: ExtensionTrustStatus.untrusted,
@@ -233,5 +275,27 @@ class _ThrowingHostClient implements ExtensionsHostClient {
   Future<HostInstallResult> installExtension(
     String packageName, {
     String? installArtifact,
+  }) => Future.error(PlatformException(code: 'ERR'));
+
+  @override
+  Future<HostSourceRuntimePageResult> executeLatest({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) => Future.error(PlatformException(code: 'ERR'));
+
+  @override
+  Future<HostSourceRuntimePageResult> executePopular({
+    required String sourceId,
+    int page = 1,
+    int pageSize = 20,
+  }) => Future.error(PlatformException(code: 'ERR'));
+
+  @override
+  Future<HostSourceRuntimePageResult> executeSearch({
+    required String sourceId,
+    required String query,
+    int page = 1,
+    int pageSize = 20,
   }) => Future.error(PlatformException(code: 'ERR'));
 }

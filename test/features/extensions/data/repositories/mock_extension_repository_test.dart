@@ -87,5 +87,44 @@ void main() {
       final list = await repo.getAvailableExtensions();
       expect(list.length, 2);
     });
+
+    test('persists install state across instance accesses', () async {
+      const packageName = 'com.example.temp.extension';
+      const installArtifact = 'temp-extension.apk';
+
+      MockExtensionRepository.addItemForTesting(
+        const ExtensionItem(
+          name: 'Temp Extension',
+          packageName: packageName,
+          language: 'en',
+          versionName: '0.1.0',
+          isInstalled: false,
+          hasUpdate: false,
+          isNsfw: false,
+          trustStatus: ExtensionTrustStatus.untrusted,
+          installArtifact: null,
+          iconUrl: null,
+        ),
+      );
+
+      final repo = MockExtensionRepository.instance;
+      final initialList = await repo.getAvailableExtensions();
+      final initialItem = initialList.firstWhere(
+        (e) => e.packageName == packageName,
+      );
+
+      expect(initialItem.isInstalled, isFalse);
+
+      await repo.install(packageName, installArtifact: installArtifact);
+
+      final freshRepo = MockExtensionRepository.instance;
+      final refreshedList = await freshRepo.getAvailableExtensions();
+      final installedItem = refreshedList.firstWhere(
+        (e) => e.packageName == packageName,
+      );
+
+      expect(installedItem.isInstalled, isTrue);
+      expect(installedItem.installArtifact, installArtifact);
+    });
   });
 }

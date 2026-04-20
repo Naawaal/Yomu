@@ -19,6 +19,30 @@ void main() {
 
       expect(resolved.toString(), 'https://repo.example/catalog.json');
     });
+
+    test('normalizes GitHub tree URL into raw compact index URL', () {
+      final Uri resolved = RemoteExtensionIndexFetchRules.resolveIndexUri(
+        Uri.parse('https://github.com/yuzono/manga-repo/tree/main/repo'),
+      );
+
+      expect(
+        resolved.toString(),
+        'https://raw.githubusercontent.com/yuzono/manga-repo/main/repo/index.min.json',
+      );
+    });
+
+    test('normalizes GitHub blob JSON URL into raw URL', () {
+      final Uri resolved = RemoteExtensionIndexFetchRules.resolveIndexUri(
+        Uri.parse(
+          'https://github.com/yuzono/manga-repo/blob/main/repo/index.min.json',
+        ),
+      );
+
+      expect(
+        resolved.toString(),
+        'https://raw.githubusercontent.com/yuzono/manga-repo/main/repo/index.min.json',
+      );
+    });
   });
 
   group('RemoteExtensionIndexModel.fromMap', () {
@@ -34,6 +58,7 @@ void main() {
               'language': 'all',
               'versionName': '1.0.0',
               'installArtifact': 'https://repo.example/mangadex.apk',
+              'iconUrl': 'https://repo.example/mangadex.png',
               'isNsfw': false,
             },
           ],
@@ -44,6 +69,10 @@ void main() {
       expect(index.repositoryName, 'Community Repo');
       expect(index.extensions, hasLength(1));
       expect(index.extensions.first.installArtifact, isNotEmpty);
+      expect(
+        index.extensions.first.iconUrl,
+        'https://repo.example/mangadex.png',
+      );
     });
 
     test('throws when schema version is unsupported', () {
@@ -80,6 +109,68 @@ void main() {
       expect(entry.isNsfw, isFalse);
     });
 
+    test('resolves relative iconUrl against repositoryUri', () {
+      final RemoteExtensionEntryModel entry =
+          RemoteExtensionEntryModel.fromObject(<String, Object?>{
+            'name': 'MangaDex',
+            'packageName': 'eu.kanade.tachiyomi.extension.all.mangadex',
+            'versionName': '1.0.0',
+            'installArtifact': 'mangadex.apk',
+            'iconUrl': 'icons/mangadex.png',
+          });
+
+      final ExtensionItem item = entry.toExtensionItem(
+        trustStatus: ExtensionTrustStatus.untrusted,
+        hasUpdate: false,
+        repositoryUri: Uri.parse('https://repo.example/catalog/index.json'),
+      );
+
+      expect(item.iconUrl, 'https://repo.example/catalog/icons/mangadex.png');
+    });
+
+    test('keeps absolute iconUrl unchanged when repositoryUri is provided', () {
+      final RemoteExtensionEntryModel entry =
+          RemoteExtensionEntryModel.fromObject(<String, Object?>{
+            'name': 'MangaDex',
+            'packageName': 'eu.kanade.tachiyomi.extension.all.mangadex',
+            'versionName': '1.0.0',
+            'installArtifact': 'https://repo.example/mangadex.apk',
+            'iconUrl': 'https://cdn.example/icons/mangadex.png',
+          });
+
+      final ExtensionItem item = entry.toExtensionItem(
+        trustStatus: ExtensionTrustStatus.untrusted,
+        hasUpdate: false,
+        repositoryUri: Uri.parse('https://repo.example/catalog/index.json'),
+      );
+
+      expect(item.iconUrl, 'https://cdn.example/icons/mangadex.png');
+    });
+
+    test(
+      'resolves relative installArtifact when repositoryUri is provided',
+      () {
+        final RemoteExtensionEntryModel entry =
+            RemoteExtensionEntryModel.fromObject(<String, Object?>{
+              'name': 'MangaDex',
+              'packageName': 'eu.kanade.tachiyomi.extension.all.mangadex',
+              'versionName': '1.0.0',
+              'installArtifact': 'downloads/mangadex.apk',
+            });
+
+        final ExtensionItem item = entry.toExtensionItem(
+          trustStatus: ExtensionTrustStatus.untrusted,
+          hasUpdate: false,
+          repositoryUri: Uri.parse('https://repo.example/catalog/index.json'),
+        );
+
+        expect(
+          item.installArtifact,
+          'https://repo.example/catalog/downloads/mangadex.apk',
+        );
+      },
+    );
+
     test('throws when installArtifact is missing', () {
       expect(
         () => RemoteExtensionEntryModel.fromObject(<String, Object?>{
@@ -99,6 +190,7 @@ void main() {
             'language': 'all',
             'versionName': '1.0.0',
             'installArtifact': 'https://repo.example/mangadex.apk',
+            'icon_url': 'https://repo.example/mangadex.png',
             'isNsfw': false,
           });
 
@@ -109,6 +201,7 @@ void main() {
 
       expect(item.name, entry.name);
       expect(item.installArtifact, entry.installArtifact);
+      expect(item.iconUrl, 'https://repo.example/mangadex.png');
       expect(item.trustStatus, ExtensionTrustStatus.untrusted);
     });
   });

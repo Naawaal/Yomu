@@ -99,6 +99,7 @@ final DateTime _now = DateTime(2026, 4, 17);
 // DateTime can't be const — use a factory helper.
 FeedItem _testFeedItem(String id, String title) => FeedItem(
   id: id,
+  sourceId: 'test.source.$id',
   title: title,
   subtitle: 'Chapter 1',
   imageUrl: '',

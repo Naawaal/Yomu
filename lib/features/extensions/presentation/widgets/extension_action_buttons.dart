@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ionicons/ionicons.dart';
 
 import '../../../../../core/constants/app_strings.dart';
 import '../../../../../core/widgets/widgets.dart';
@@ -39,8 +40,25 @@ class ExtensionActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isTrusted = item.trustStatus == ExtensionTrustStatus.trusted;
     final bool hasInstallArtifact = item.installArtifact?.isNotEmpty ?? false;
+    final bool isInstalled = item.isInstalled;
     final bool shouldShowInstall =
         item.hasUpdate || (showInstallWhenUpToDate && hasInstallArtifact);
+
+    // Show installed badge when extension is already installed and has no updates.
+    // Installed state should win over trust state on the detail page.
+    if (isInstalled && !item.hasUpdate) {
+      final Widget badge = Chip(
+        label: Text(isLoading ? AppStrings.installing : AppStrings.installed),
+        avatar: isLoading
+            ? const AppLoader(size: AppLoaderSize.sm)
+            : const Icon(Ionicons.checkmark_done_outline, size: 16),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+        ),
+      );
+      return fullWidth ? SizedBox(width: double.infinity, child: badge) : badge;
+    }
 
     if (!isTrusted) {
       final Widget button = hasInstallArtifact

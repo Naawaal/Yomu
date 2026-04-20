@@ -15,6 +15,7 @@ class ExtensionItem {
     required this.packageName,
     required this.language,
     required this.versionName,
+    required this.isInstalled,
     required this.hasUpdate,
     required this.isNsfw,
     required this.trustStatus,
@@ -33,6 +34,9 @@ class ExtensionItem {
 
   /// Version name.
   final String versionName;
+
+  /// Whether the source is already installed on device.
+  final bool isInstalled;
 
   /// Whether an update is available.
   final bool hasUpdate;

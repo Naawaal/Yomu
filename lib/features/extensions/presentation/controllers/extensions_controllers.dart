@@ -1,10 +1,13 @@
+import 'package:dartz/dartz.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/bridge/extensions_host_client.dart';
+import '../../../../core/failure.dart';
 import '../../../settings/presentation/controllers/settings_controller.dart';
 import '../../data/datasources/remote_extension_index_datasource.dart';
+import '../../data/repositories/extension_repository_result_adapter.dart';
 import '../../data/repositories/bridge_extension_repository.dart';
 import '../../data/repositories/composite_extension_repository.dart';
 import '../../data/repositories/mock_extension_repository.dart';
@@ -66,15 +69,32 @@ ExtensionRepository extensionRepository(Ref ref) {
   );
 }
 
+/// Provides typed Either-based operations for extension repository flows.
+final Provider<ExtensionRepositoryResultAdapter>
+extensionRepositoryResultAdapterProvider =
+    Provider<ExtensionRepositoryResultAdapter>((Ref ref) {
+      return ExtensionRepositoryResultAdapter(
+        ref.watch(extensionRepositoryProvider),
+      );
+    });
+
 /// Loads extension list state.
 @riverpod
 class ExtensionsListController extends _$ExtensionsListController {
   @override
   Future<List<ExtensionItem>> build() {
-    final ExtensionRepository repository = ref.watch(
-      extensionRepositoryProvider,
+    final ExtensionRepositoryResultAdapter adapter = ref.watch(
+      extensionRepositoryResultAdapterProvider,
     );
-    return repository.getAvailableExtensions();
+
+    return adapter.getAvailableExtensions().then((
+      Either<Failure, List<ExtensionItem>> result,
+    ) {
+      return result.fold(
+        (Failure failure) => throw failure,
+        (List<ExtensionItem> items) => items,
+      );
+    });
   }
 
   /// Reloads extension list from repository.
@@ -83,6 +103,20 @@ class ExtensionsListController extends _$ExtensionsListController {
     state = await AsyncValue.guard(build);
   }
 }
+
+/// Derives installed extension entries from the loaded extensions list state.
+final Provider<AsyncValue<List<ExtensionItem>>> installedSourcesProvider =
+    Provider<AsyncValue<List<ExtensionItem>>>((Ref ref) {
+      final AsyncValue<List<ExtensionItem>> asyncExtensions = ref.watch(
+        extensionsListControllerProvider,
+      );
+
+      return asyncExtensions.whenData((List<ExtensionItem> items) {
+        return items
+            .where((ExtensionItem item) => item.isInstalled)
+            .toList(growable: false);
+      });
+    });
 
 /// Handles mutating extension actions.
 @riverpod
@@ -110,8 +144,34 @@ class ExtensionActionController extends _$ExtensionActionController {
       extensionRepositoryProvider,
     );
     state = const AsyncLoading<void>();
-    state = await AsyncValue.guard(
+    final AsyncValue<void> installState = await AsyncValue.guard(
       () => repository.install(packageName, installArtifact: installArtifact),
     );
+
+    state = installState;
+
+    final bool requiresUserAction =
+        installState.hasError &&
+        installState.error is ExtensionInstallException &&
+        (installState.error as ExtensionInstallException).code ==
+            ExtensionInstallErrorCode.requiresUserAction;
+
+    if (!installState.hasError || requiresUserAction) {
+      await ref.read(extensionsListControllerProvider.notifier).refresh();
+    }
+
+    if (requiresUserAction) {
+      final List<ExtensionItem> refreshedItems =
+          ref.read(extensionsListControllerProvider).valueOrNull ??
+          const <ExtensionItem>[];
+      final bool nowInstalled = refreshedItems.any(
+        (ExtensionItem item) =>
+            item.packageName == packageName && item.isInstalled,
+      );
+
+      if (nowInstalled) {
+        state = const AsyncData<void>(null);
+      }
+    }
   }
 }

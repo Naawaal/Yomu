@@ -33,6 +33,7 @@ class HomeFeedPageModel extends HomeFeedPage {
         .map(
           (FeedItem item) => <String, dynamic>{
             'id': item.id,
+            'sourceId': item.sourceId,
             'title': item.title,
             'subtitle': item.subtitle,
             'imageUrl': item.imageUrl,

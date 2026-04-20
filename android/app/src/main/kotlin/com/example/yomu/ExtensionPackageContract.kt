@@ -12,6 +12,20 @@ object ExtensionPackageContract {
   const val metadataLanguage = "com.example.yomu.extension.LANGUAGE"
   const val metadataNsfw = "com.example.yomu.extension.NSFW"
   const val metadataInstallArtifact = "com.example.yomu.extension.INSTALL_ARTIFACT"
+  const val metadataIconUrl = "com.example.yomu.extension.ICON_URL"
 
   const val discoverAction = "com.example.yomu.extension.DISCOVER"
+
+  // Legacy ecosystem discovery actions used by Tachiyomi/Mihon extensions.
+  const val tachiyomiDiscoverAction = "eu.kanade.tachiyomi.extension"
+  const val mihonDiscoverAction = "app.mihon.extension"
+
+  val discoverActions: List<String> = listOf(
+    discoverAction,
+    tachiyomiDiscoverAction,
+    mihonDiscoverAction,
+  )
+
+  const val tachiyomiPackagePrefix = "eu.kanade.tachiyomi.extension."
+  const val mihonPackagePrefix = "app.mihon.extension."
 }

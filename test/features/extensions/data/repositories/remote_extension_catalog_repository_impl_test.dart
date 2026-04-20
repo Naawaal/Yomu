@@ -57,14 +57,20 @@ class _FakeSettingsRepository implements SettingsRepository {
 }
 
 class _FakeRemoteDataSource implements RemoteExtensionIndexDataSource {
-  _FakeRemoteDataSource(this.responses);
+  _FakeRemoteDataSource(this.responses, {this.failures = const {}});
 
   final Map<String, RemoteExtensionIndexModel> responses;
+  final Map<String, Object> failures;
 
   @override
   Future<RemoteExtensionIndexModel> fetchRepositoryIndex(
     Uri repositoryUri,
   ) async {
+    final Object? failure = failures[repositoryUri.toString()];
+    if (failure != null) {
+      throw failure;
+    }
+
     final RemoteExtensionIndexModel? value =
         responses[repositoryUri.toString()];
     if (value == null) {
@@ -90,6 +96,13 @@ void main() {
       isEnabled: false,
       healthStatus: RepositoryHealthStatus.healthy,
     );
+    const RepositoryConfig enabledWithIndex = RepositoryConfig(
+      id: 'repo-indexed',
+      displayName: 'Indexed Repo',
+      baseUrl: 'https://repo.example/catalog/index.json',
+      isEnabled: true,
+      healthStatus: RepositoryHealthStatus.healthy,
+    );
 
     test('returns entries from enabled repositories', () async {
       final RemoteExtensionCatalogRepositoryImpl
@@ -109,6 +122,7 @@ void main() {
                   'language': 'all',
                   'versionName': '1.0.0',
                   'installArtifact': 'https://repo.example/mangadex.apk',
+                  'iconUrl': 'https://repo.example/mangadex.png',
                 },
               ],
             },
@@ -120,8 +134,50 @@ void main() {
 
       expect(items, hasLength(1));
       expect(items.first.name, 'MangaDex');
+      expect(items.first.iconUrl, 'https://repo.example/mangadex.png');
       expect(items.first.trustStatus, ExtensionTrustStatus.untrusted);
     });
+
+    test(
+      'resolves relative install and icon URLs against repository base',
+      () async {
+        final RemoteExtensionCatalogRepositoryImpl
+        repository = RemoteExtensionCatalogRepositoryImpl(
+          settingsRepository: _FakeSettingsRepository(<RepositoryConfig>[
+            enabledWithIndex,
+          ]),
+          dataSource: _FakeRemoteDataSource(<String, RemoteExtensionIndexModel>{
+            'https://repo.example/catalog/index.json':
+                const RemoteExtensionIndexModel(
+                  schemaVersion: 1,
+                  extensions: <RemoteExtensionEntryModel>[
+                    RemoteExtensionEntryModel(
+                      name: 'MangaDex',
+                      packageName: 'eu.kanade.tachiyomi.extension.all.mangadex',
+                      language: 'all',
+                      versionName: '1.0.0',
+                      installArtifact: 'downloads/mangadex.apk',
+                      iconUrl: 'icons/mangadex.png',
+                      isNsfw: false,
+                    ),
+                  ],
+                ),
+          }),
+        );
+
+        final List<ExtensionItem> items = await repository
+            .getRemoteExtensions();
+        final ExtensionItem item = items.single;
+
+        expect(
+          item.installArtifact,
+          'https://repo.example/catalog/downloads/mangadex.apk',
+        );
+        expect(item.iconUrl, 'https://repo.example/catalog/icons/mangadex.png');
+        expect(item.trustStatus, ExtensionTrustStatus.untrusted);
+        expect(item.isInstalled, isFalse);
+      },
+    );
 
     test(
       'continues returning valid entries when another repository fails',
@@ -214,5 +270,56 @@ void main() {
         'eu.kanade.tachiyomi.extension.all.mangadex',
       );
     });
+
+    test(
+      'throws aggregated failures when no repository resolves entries',
+      () async {
+        final RemoteExtensionCatalogRepositoryImpl repository =
+            RemoteExtensionCatalogRepositoryImpl(
+              settingsRepository: _FakeSettingsRepository(<RepositoryConfig>[
+                enabled,
+                const RepositoryConfig(
+                  id: 'repo-broken',
+                  displayName: 'Broken Repo',
+                  baseUrl: 'https://broken.example',
+                  isEnabled: true,
+                  healthStatus: RepositoryHealthStatus.healthy,
+                ),
+              ]),
+              dataSource: _FakeRemoteDataSource(
+                const <String, RemoteExtensionIndexModel>{},
+                failures: const <String, Object>{
+                  'https://repo.example':
+                      RemoteExtensionIndexInvalidFormatException(
+                        'Repository returned HTML instead of JSON',
+                      ),
+                  'https://broken.example':
+                      RemoteExtensionIndexUnreachableException(
+                        'Connection timeout',
+                      ),
+                },
+              ),
+            );
+
+        await expectLater(
+          repository.getRemoteExtensions(),
+          throwsA(
+            isA<RemoteExtensionCatalogAggregateException>()
+                .having(
+                  (RemoteExtensionCatalogAggregateException error) =>
+                      error.failures.length,
+                  'failure count',
+                  2,
+                )
+                .having(
+                  (RemoteExtensionCatalogAggregateException error) =>
+                      error.toString(),
+                  'message',
+                  allOf(contains('Enabled'), contains('Connection timeout')),
+                ),
+          ),
+        );
+      },
+    );
   });
 }

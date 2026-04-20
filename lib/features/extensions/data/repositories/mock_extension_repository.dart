@@ -18,6 +18,7 @@ class MockExtensionRepository implements ExtensionRepository {
       packageName: 'eu.kanade.tachiyomi.extension.en.mangadex',
       language: 'en',
       versionName: '1.4.9',
+      isInstalled: true,
       hasUpdate: true,
       isNsfw: false,
       trustStatus: ExtensionTrustStatus.trusted,
@@ -30,6 +31,7 @@ class MockExtensionRepository implements ExtensionRepository {
       packageName: 'eu.kanade.tachiyomi.extension.all.nekoscans',
       language: 'all',
       versionName: '1.4.5',
+      isInstalled: true,
       hasUpdate: false,
       isNsfw: true,
       trustStatus: ExtensionTrustStatus.untrusted,
@@ -54,6 +56,7 @@ class MockExtensionRepository implements ExtensionRepository {
         packageName: 'eu.kanade.tachiyomi.extension.en.mangadex',
         language: 'en',
         versionName: '1.4.9',
+        isInstalled: true,
         hasUpdate: true,
         isNsfw: false,
         trustStatus: ExtensionTrustStatus.trusted,
@@ -66,6 +69,7 @@ class MockExtensionRepository implements ExtensionRepository {
         packageName: 'eu.kanade.tachiyomi.extension.all.nekoscans',
         language: 'all',
         versionName: '1.4.5',
+        isInstalled: true,
         hasUpdate: false,
         isNsfw: true,
         trustStatus: ExtensionTrustStatus.untrusted,
@@ -75,6 +79,12 @@ class MockExtensionRepository implements ExtensionRepository {
     ]);
   }
 
+  /// Adds a temporary item for testing.
+  @visibleForTesting
+  static void addItemForTesting(ExtensionItem item) {
+    _items.add(item);
+  }
+
   @override
   Future<List<ExtensionItem>> getAvailableExtensions() async {
     return List<ExtensionItem>.unmodifiable(_items);
@@ -82,7 +92,24 @@ class MockExtensionRepository implements ExtensionRepository {
 
   @override
   Future<void> install(String packageName, {String? installArtifact}) async {
-    return;
+    final int index = _items.indexWhere((e) => e.packageName == packageName);
+    if (index < 0) {
+      return;
+    }
+
+    final ExtensionItem current = _items[index];
+    _items[index] = ExtensionItem(
+      name: current.name,
+      packageName: current.packageName,
+      language: current.language,
+      versionName: current.versionName,
+      isInstalled: true,
+      hasUpdate: current.hasUpdate,
+      isNsfw: current.isNsfw,
+      trustStatus: current.trustStatus,
+      installArtifact: installArtifact ?? current.installArtifact,
+      iconUrl: current.iconUrl,
+    );
   }
 
   @override
@@ -97,10 +124,12 @@ class MockExtensionRepository implements ExtensionRepository {
       packageName: current.packageName,
       language: current.language,
       versionName: current.versionName,
+      isInstalled: current.isInstalled,
       hasUpdate: current.hasUpdate,
       isNsfw: current.isNsfw,
       trustStatus: ExtensionTrustStatus.trusted,
       installArtifact: current.installArtifact,
+      iconUrl: current.iconUrl,
     );
   }
 }
